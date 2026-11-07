@@ -1,0 +1,3682 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>DattaKrupa Society (दत्तकृपा सोसायटी)</title>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <style>
+    body {
+      -webkit-tap-highlight-color: transparent;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    .hide-scrollbar::-webkit-scrollbar { display: none; }
+    .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 antialiased min-h-screen flex justify-center selection:bg-indigo-500 selection:text-white">
+
+  <!-- In-App Notification Toast (Replaces alert) -->
+  <div id="toastNotification" class="hidden fixed top-4 z-[9999] max-w-xs px-4 py-2.5 rounded-2xl shadow-xl text-xs font-bold text-white transition-all transform duration-300">
+    <div class="flex items-center gap-2">
+      <i id="toastIcon" class="fa-solid fa-circle-check text-sm"></i>
+      <span id="toastMsg">Action completed successfully</span>
+    </div>
+  </div>
+
+  <!-- Universal Confirmation Modal (Replaces blocked confirm) -->
+  <div id="modalConfirmAction" class="hidden fixed inset-0 bg-slate-900/60 z-[9999] flex items-center justify-center p-3">
+    <div class="bg-white rounded-3xl w-full max-w-sm p-4 space-y-3 shadow-2xl">
+      <div class="flex items-center gap-3 text-rose-600">
+        <div class="w-10 h-10 rounded-2xl bg-rose-50 flex items-center justify-center text-lg">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+        </div>
+        <div>
+          <h3 class="font-bold text-xs text-slate-900" id="confirmModalTitle">Confirm Delete</h3>
+          <p class="text-[10px] text-slate-500">This action cannot be undone.</p>
+        </div>
+      </div>
+      <p class="text-xs text-slate-600" id="confirmModalMessage">Are you sure?</p>
+      <div class="flex items-center gap-2 pt-2 border-t border-slate-100">
+        <button onclick="closeConfirmModal(false)" class="flex-1 py-2 rounded-xl text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200">
+          Cancel
+        </button>
+        <button id="confirmModalConfirmBtn" onclick="executePendingConfirm()" class="flex-1 py-2 rounded-xl text-xs font-bold text-white bg-rose-600 hover:bg-rose-700">
+          Delete
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hidden Dedicated Printable Container for Financial Summary PDF Export -->
+  <div id="summaryPdfExportModal" class="hidden fixed inset-0 bg-white z-[99999] overflow-y-auto p-8 text-slate-800">
+    <div id="summaryPdfContent" class="max-w-2xl mx-auto bg-white p-6 border border-slate-200 rounded-xl">
+      <!-- Injected dynamically -->
+    </div>
+  </div>
+
+  <!-- Mobile Container Wrapper -->
+  <div class="w-full max-w-md bg-white min-h-screen shadow-2xl relative flex flex-col pb-20">
+
+    <!-- 1. LOGIN SCREEN -->
+    <div id="loginScreen" class="fixed inset-0 bg-slate-900/95 z-50 flex items-center justify-center p-4">
+      <div class="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl border border-slate-100 flex flex-col">
+        <div class="text-center mb-6">
+          <div class="w-16 h-16 bg-gradient-to-tr from-indigo-600 to-indigo-800 rounded-2xl flex items-center justify-center mx-auto text-white shadow-lg shadow-indigo-200 mb-3 text-2xl">
+            <i class="fa-solid fa-building-circle-check"></i>
+          </div>
+          <h2 class="text-xl font-black text-slate-900 tracking-tight">DattaKrupa Society</h2>
+          <p class="text-xs font-semibold text-indigo-600">दत्तकृपा सोसायटी</p>
+        </div>
+
+        <div class="space-y-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Username</label>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
+                <i class="fa-regular fa-user text-sm"></i>
+              </span>
+              <input type="text" id="loginUser" placeholder="Enter username" 
+                     class="w-full pl-10 pr-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium">
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Password</label>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
+                <i class="fa-solid fa-lock text-sm"></i>
+              </span>
+              <input type="password" id="loginPass" placeholder="Enter password" 
+                     class="w-full pl-10 pr-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium">
+            </div>
+          </div>
+
+          <div id="loginError" class="hidden text-xs text-rose-600 bg-rose-50 p-2.5 rounded-xl border border-rose-100 flex items-center gap-2">
+            <i class="fa-solid fa-circle-exclamation"></i>
+            <span id="loginErrorMsg">Invalid credentials</span>
+          </div>
+
+          <button onclick="handleLoginSubmit()" 
+                  class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl shadow-lg shadow-indigo-200 active:scale-[0.98] transition flex items-center justify-center gap-2 mt-2">
+            <span>Sign In</span>
+            <i class="fa-solid fa-arrow-right text-xs"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. TOP HEADER -->
+    <header class="bg-white border-b border-slate-100 sticky top-0 z-30 px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-2.5">
+        <div class="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold text-lg shadow-md shadow-indigo-100">
+          <i class="fa-solid fa-building"></i>
+        </div>
+        <div>
+          <h1 class="font-extrabold text-sm text-slate-900 leading-tight">DattaKrupa Society</h1>
+          <p class="text-[11px] font-medium text-slate-500">दत्तकृपा सोसायटी</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <div id="syncBadge" class="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 transition">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span id="syncText">Connected</span>
+        </div>
+
+        <button onclick="openChangeMyPasswordModal()" title="Change My Password" 
+                class="w-8 h-8 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-600 flex items-center justify-center transition text-xs">
+          <i class="fa-solid fa-key"></i>
+        </button>
+
+        <button onclick="handleLogout()" title="Logout" 
+                class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition text-xs">
+          <i class="fa-solid fa-power-off"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- 3. MAIN SCROLLABLE CONTENT -->
+    <main class="flex-1 px-4 py-4 space-y-4 overflow-y-auto hide-scrollbar">
+
+      <!-- Active User Profile Banner -->
+      <div id="userBanner" class="bg-indigo-50 border border-indigo-100 p-3 rounded-2xl flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center text-xs">
+            <i class="fa-solid fa-user-shield"></i>
+          </div>
+          <div>
+            <p class="text-xs font-bold text-slate-800" id="userBannerName">User</p>
+            <p class="text-[10px] text-slate-500" id="userBannerSub">DattaKrupa Society</p>
+          </div>
+        </div>
+        <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full border" id="userBannerRoleBadge">Role</span>
+      </div>
+
+      <!-- TAB 1: DASHBOARD -->
+      <section id="viewDashboard" class="space-y-4">
+        <!-- 4 Grand Metric Cards -->
+        <div class="grid grid-cols-2 gap-3">
+          <div class="bg-gradient-to-br from-indigo-500 to-indigo-700 p-3.5 rounded-2xl text-white shadow-md shadow-indigo-100">
+            <span class="text-[10px] font-medium uppercase tracking-wider text-indigo-100">Total Collected</span>
+            <h3 class="text-lg font-black mt-1" id="dashCollected">₹0</h3>
+            <p class="text-[10px] text-indigo-200 mt-1" id="dashMonthCollectedSub">This Month: ₹0</p>
+          </div>
+          <div class="bg-gradient-to-br from-rose-500 to-rose-700 p-3.5 rounded-2xl text-white shadow-md shadow-rose-100">
+            <span class="text-[10px] font-medium uppercase tracking-wider text-rose-100">Total Pending</span>
+            <h3 class="text-lg font-black mt-1" id="dashPending">₹0</h3>
+            <p class="text-[10px] text-rose-200 mt-1" id="dashMonthPendingSub">This Month: ₹0</p>
+          </div>
+          <div class="bg-gradient-to-br from-amber-500 to-amber-700 p-3.5 rounded-2xl text-white shadow-md shadow-amber-100">
+            <span class="text-[10px] font-medium uppercase tracking-wider text-amber-100">Total Expenses</span>
+            <h3 class="text-lg font-black mt-1" id="dashExpenses">₹0</h3>
+            <p class="text-[10px] text-amber-200 mt-1"><i class="fa-solid fa-receipt"></i> Society Costs</p>
+          </div>
+          <div class="bg-gradient-to-br from-emerald-500 to-emerald-700 p-3.5 rounded-2xl text-white shadow-md shadow-emerald-100">
+            <span class="text-[10px] font-medium uppercase tracking-wider text-emerald-100">Net Reserve</span>
+            <h3 class="text-lg font-black mt-1" id="dashBalance">₹0</h3>
+            <p class="text-[10px] text-emerald-200 mt-1"><i class="fa-solid fa-vault"></i> Available</p>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between pt-1">
+          <h2 class="text-xs font-bold text-slate-700 uppercase tracking-wider">Reports & Statements</h2>
+          <button onclick="openSummaryModal()" class="text-xs font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1">
+            <i class="fa-solid fa-file-invoice"></i> Download Summary
+          </button>
+        </div>
+
+        <!-- Collections & Dues Panel (Matching user design request) -->
+        <div class="bg-white rounded-3xl p-4 border border-slate-100 shadow-sm space-y-3">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+            <div>
+              <h3 class="font-bold text-xs text-slate-800">Collections & Dues Status</h3>
+              <p class="text-[10px] text-slate-400" id="recentCollectionsSubText">All flats status</p>
+            </div>
+            <button onclick="openAllCollectionsModal()" class="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1">
+              <span>View All</span>
+              <i class="fa-solid fa-chevron-right text-[9px]"></i>
+            </button>
+          </div>
+
+          <!-- This Month vs All Time Toggle Tabs -->
+          <div class="flex items-center bg-slate-100 p-1 rounded-xl text-xs font-bold">
+            <button id="tabBtnRecentMonth" onclick="switchRecentCollectionTab('thisMonth')" 
+                    class="flex-1 py-1 rounded-lg bg-white text-indigo-700 shadow-sm transition flex items-center justify-center gap-1 text-[11px]">
+              <span>This Month</span>
+              <span id="badgeCountThisMonth" class="px-1.5 py-0.2 rounded-full text-[9px] bg-indigo-100 text-indigo-800">0</span>
+            </button>
+            <button id="tabBtnRecentAll" onclick="switchRecentCollectionTab('allTime')" 
+                    class="flex-1 py-1 rounded-lg text-slate-500 hover:text-slate-800 transition flex items-center justify-center gap-1 text-[11px]">
+              <span>All Time</span>
+              <span id="badgeCountAllTime" class="px-1.5 py-0.2 rounded-full text-[9px] bg-slate-200 text-slate-700">0</span>
+            </button>
+          </div>
+
+          <!-- Matching Side-by-Side Summary Cards -->
+          <div class="grid grid-cols-2 gap-2.5">
+            <div class="p-3 rounded-2xl bg-emerald-50/80 border border-emerald-200">
+              <span class="text-[10px] font-semibold text-emerald-800 block" id="recentCollectionRibbonLabel">This Month Collected:</span>
+              <h4 class="text-base font-black text-emerald-700 mt-0.5" id="recentCollectionRibbonAmount">₹0</h4>
+            </div>
+            <div class="p-3 rounded-2xl bg-rose-50/80 border border-rose-200">
+              <span class="text-[10px] font-semibold text-rose-800 block" id="recentPendingRibbonLabel">This Month Pending:</span>
+              <h4 class="text-base font-black text-rose-700 mt-0.5" id="recentPendingRibbonAmount">₹0</h4>
+            </div>
+          </div>
+
+          <!-- Unified Flat List -->
+          <div id="recentBillsList" class="space-y-2.5 pt-1"></div>
+        </div>
+      </section>
+
+      <!-- TAB 2: BILLS -->
+      <section id="viewBills" class="hidden space-y-3">
+        <div class="flex items-center justify-between">
+          <h2 class="text-sm font-bold text-slate-800">Maintenance Bills</h2>
+          <div class="flex items-center gap-1.5">
+            <button onclick="openBillsDownloadModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold px-2.5 py-1.5 rounded-xl border border-slate-200 flex items-center gap-1">
+              <i class="fa-solid fa-download text-[10px]"></i> Download
+            </button>
+            <button id="adminBulkCollectBtn" onclick="openBulkCollectModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-2.5 py-1.5 rounded-xl shadow-sm flex items-center gap-1">
+              <i class="fa-solid fa-list-check text-[10px]"></i> Bulk Collect
+            </button>
+            <button id="adminAddBillBtn" onclick="openAddBillModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-3 py-1.5 rounded-xl shadow-sm flex items-center gap-1.5">
+              <i class="fa-solid fa-plus text-[10px]"></i> New Bill
+            </button>
+          </div>
+        </div>
+
+        <div class="relative">
+          <input type="text" id="billSearchInput" oninput="renderBills()" placeholder="Search Flat or Month..." 
+                 class="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          <i class="fa-solid fa-magnifying-glass text-slate-400 text-xs absolute left-3 top-3"></i>
+        </div>
+
+        <div id="billsContainer" class="space-y-2.5"></div>
+      </section>
+
+      <!-- TAB 3: EXPENSES -->
+      <section id="viewExpenses" class="hidden space-y-3">
+        <div class="flex items-center justify-between">
+          <h2 class="text-sm font-bold text-slate-800">Society Expenses</h2>
+          <div class="flex items-center gap-1.5">
+            <button onclick="openExpenseDownloadModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold px-2.5 py-1.5 rounded-xl border border-slate-200 flex items-center gap-1">
+              <i class="fa-solid fa-download text-[10px]"></i> Download Expenses
+            </button>
+            <button id="adminAddExpBtn" onclick="openAddExpenseModal()" class="bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold px-3 py-1.5 rounded-xl shadow-sm flex items-center gap-1.5">
+              <i class="fa-solid fa-plus text-[10px]"></i> Add Expense
+            </button>
+          </div>
+        </div>
+        <div id="expensesContainer" class="space-y-2.5"></div>
+      </section>
+
+      <!-- TAB 4: FLATS & MEMBERS -->
+      <section id="viewMembers" class="hidden space-y-3">
+        <div class="flex items-center justify-between">
+          <h2 class="text-sm font-bold text-slate-800">Flats & Maintenance Rates</h2>
+          <button id="adminAddFlatBtn" onclick="openAddFlatModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-3 py-1.5 rounded-xl shadow-sm flex items-center gap-1.5">
+            <i class="fa-solid fa-plus text-[10px]"></i> Add Flat
+          </button>
+        </div>
+        <div id="flatsContainer" class="space-y-2.5"></div>
+      </section>
+
+      <!-- TAB 5: USERS & ROLES (ADMIN ONLY) -->
+      <section id="viewUsers" class="hidden space-y-3">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-sm font-bold text-slate-800">User Management</h2>
+            <p class="text-[10px] text-slate-500">Manage logins, roles & access permissions</p>
+          </div>
+          <button onclick="openCreateUserModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-3 py-1.5 rounded-xl shadow-sm flex items-center gap-1.5">
+            <i class="fa-solid fa-user-plus text-[10px]"></i> New User
+          </button>
+        </div>
+        <div id="usersListContainer" class="space-y-2.5"></div>
+      </section>
+
+      <!-- TAB 6: IMPORT & DRIVE BACKEND (ADMIN ONLY) -->
+      <section id="viewSettings" class="hidden space-y-4">
+        <div class="bg-slate-50 p-3 rounded-2xl border border-slate-200">
+          <h3 class="text-xs font-bold text-slate-800 mb-1">Automatic Drive Sync</h3>
+          <p class="text-[11px] text-slate-500 leading-relaxed">
+            Data synchronizes directly to your Google Apps Script backend and updates the JSON database inside your Google Drive folder.
+          </p>
+          <div class="mt-2.5 flex items-center gap-2">
+            <button onclick="triggerManualSync()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-3 py-1.5 rounded-xl flex items-center gap-1.5">
+              <i class="fa-solid fa-rotate"></i> Sync to Drive Now
+            </button>
+            <a href="https://drive.google.com/drive/u/0/folders/1R5EJDh0svSkoAM-yo1KeSyU87xJYOaGC" target="_blank" class="bg-white border border-slate-200 text-slate-700 text-xs font-semibold px-3 py-1.5 rounded-xl flex items-center gap-1.5">
+              <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i> Open Drive Folder
+            </a>
+          </div>
+        </div>
+
+        <!-- Master Flats Import -->
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-2.5">
+          <div class="flex items-center justify-between">
+            <div>
+              <h4 class="text-xs font-bold text-slate-800">1. Import Maintenance / Flats Master</h4>
+              <p class="text-[10px] text-slate-500">Add or update flat members and monthly rates</p>
+            </div>
+            <button onclick="downloadSampleMasterExcel()" class="text-indigo-600 hover:text-indigo-700 text-xs font-bold flex items-center gap-1">
+              <i class="fa-solid fa-download"></i> Sample
+            </button>
+          </div>
+          <input type="file" id="masterExcelInput" accept=".xlsx, .xls, .csv" onchange="handleMasterFileSelect(event)" 
+                 class="block w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer">
+          <div id="masterPreviewArea" class="hidden space-y-2 pt-2 border-t border-slate-100">
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] font-bold text-slate-600" id="masterPreviewCount">0 rows ready</span>
+              <button onclick="commitMasterImport()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 py-1 rounded-lg">Confirm Import</button>
+            </div>
+            <div class="max-h-36 overflow-y-auto text-[10px] border border-slate-100 rounded-lg" id="masterPreviewTable"></div>
+          </div>
+        </div>
+
+        <!-- Historical Bills Import -->
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-2.5">
+          <div class="flex items-center justify-between">
+            <div>
+              <h4 class="text-xs font-bold text-slate-800">2. Import Historical Bills & Collections</h4>
+              <p class="text-[10px] text-slate-500">Bulk import previous bills and payment records</p>
+            </div>
+            <button onclick="downloadSampleBillsExcel()" class="text-indigo-600 hover:text-indigo-700 text-xs font-bold flex items-center gap-1">
+              <i class="fa-solid fa-download"></i> Sample
+            </button>
+          </div>
+          <input type="file" id="billsExcelInput" accept=".xlsx, .xls, .csv" onchange="handleBillsFileSelect(event)" 
+                 class="block w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer">
+          <div id="billsPreviewArea" class="hidden space-y-2 pt-2 border-t border-slate-100">
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] font-bold text-slate-600" id="billsPreviewCount">0 rows ready</span>
+              <button onclick="commitBillsImport()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 py-1 rounded-lg">Confirm Import</button>
+            </div>
+            <div class="max-h-36 overflow-y-auto text-[10px] border border-slate-100 rounded-lg" id="billsPreviewTable"></div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- 4. BOTTOM NAVIGATION BAR -->
+    <nav class="fixed bottom-0 w-full max-w-md bg-white border-t border-slate-200 z-30 flex items-center justify-around py-2 px-1">
+      <button onclick="switchTab('Dashboard')" id="tabBtnDashboard" class="flex flex-col items-center text-indigo-600 py-1 px-2">
+        <i class="fa-solid fa-chart-pie text-sm mb-0.5"></i>
+        <span class="text-[10px] font-semibold">Home</span>
+      </button>
+      <button onclick="switchTab('Bills')" id="tabBtnBills" class="flex flex-col items-center text-slate-400 py-1 px-2">
+        <i class="fa-solid fa-file-invoice-dollar text-sm mb-0.5"></i>
+        <span class="text-[10px] font-semibold">Bills</span>
+      </button>
+      <button onclick="switchTab('Expenses')" id="tabBtnExpenses" class="flex flex-col items-center text-slate-400 py-1 px-2">
+        <i class="fa-solid fa-wallet text-sm mb-0.5"></i>
+        <span class="text-[10px] font-semibold">Expenses</span>
+      </button>
+      <button onclick="switchTab('Members')" id="tabBtnMembers" class="flex flex-col items-center text-slate-400 py-1 px-2">
+        <i class="fa-solid fa-users text-sm mb-0.5"></i>
+        <span class="text-[10px] font-semibold">Flats</span>
+      </button>
+      <button onclick="switchTab('Users')" id="tabBtnUsers" class="flex flex-col items-center text-slate-400 py-1 px-2">
+        <i class="fa-solid fa-user-gear text-sm mb-0.5"></i>
+        <span class="text-[10px] font-semibold">Users</span>
+      </button>
+      <button onclick="switchTab('Settings')" id="tabBtnSettings" class="flex flex-col items-center text-slate-400 py-1 px-2">
+        <i class="fa-solid fa-file-import text-sm mb-0.5"></i>
+        <span class="text-[10px] font-semibold">Import</span>
+      </button>
+    </nav>
+
+    <!-- 5. USER PROFILE / SELF PASSWORD CHANGE MODAL -->
+    <div id="modalChangeMyPassword" class="hidden fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-3">
+      <div class="bg-white rounded-3xl w-full max-w-sm p-4 space-y-3 shadow-2xl">
+        <div class="flex items-center justify-between border-b pb-2">
+          <h3 class="font-bold text-xs text-slate-800">Change My Password</h3>
+          <button onclick="closeModal('modalChangeMyPassword')" class="text-slate-400 text-sm"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="space-y-2 text-xs">
+          <div>
+            <label class="font-bold text-slate-600 block mb-0.5">Current Password</label>
+            <input type="password" id="selfCurrentPass" placeholder="Enter existing password" class="w-full border rounded-xl p-2">
+          </div>
+          <div>
+            <label class="font-bold text-slate-600 block mb-0.5">New Password</label>
+            <input type="password" id="selfNewPass" placeholder="Enter new password" class="w-full border rounded-xl p-2">
+          </div>
+          <div>
+            <label class="font-bold text-slate-600 block mb-0.5">Confirm New Password</label>
+            <input type="password" id="selfConfirmPass" placeholder="Repeat new password" class="w-full border rounded-xl p-2">
+          </div>
+        </div>
+        <button onclick="submitChangeMyPassword()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 rounded-xl text-xs mt-1">Update Password</button>
+      </div>
+    </div>
+
+    <!-- 6. ADMIN USER CREATION / EDIT MODAL -->
+    <div id="modalUserManage" class="hidden fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-3">
+      <div class="bg-white rounded-3xl w-full max-w-sm p-4 space-y-3 shadow-2xl">
+        <div class="flex items-center justify-between border-b pb-2">
+          <h3 class="font-bold text-xs text-slate-800" id="userManageModalTitle">Create User</h3>
+          <button onclick="closeModal('modalUserManage')" class="text-slate-400 text-sm"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <input type="hidden" id="manageUserMode" value="create">
+        <input type="hidden" id="manageUserOriginalUsername" value="">
+        <div class="space-y-2 text-xs">
+          <div>
+            <label class="font-bold text-slate-600 block mb-0.5">Username / Login ID</label>
+            <input type="text" id="manageUserUsername" placeholder="e.g. A-101 or secretary" class="w-full border rounded-xl p-2">
+          </div>
+          <div>
+            <label class="font-bold text-slate-600 block mb-0.5">Full Name</label>
+            <input type="text" id="manageUserName" placeholder="Full name" class="w-full border rounded-xl p-2">
+          </div>
+          <div>
+            <label class="font-bold text-slate-600 block mb-0.5">Assign Role</label>
+            <select id="manageUserRole" onchange="toggleManageFlatField()" class="w-full border rounded-xl p-2 bg-white">
+              <option value="flat_owner">Flat Owner (फ्लॅट मालक)</option>
+              <option value="committee">Committee Member (कमिटी सदस्य)</option>
+              <option value="admin">Admin (अ‍ॅडमिन)</option>
+            </select>
+          </div>
+          <div id="manageUserFlatBox">
+            <label class="font-bold text-slate-600 block mb-0.5">Linked Flat Number</label>
+            <select id="manageUserFlatId" class="w-full border rounded-xl p-2 bg-white"></select>
+          </div>
+          <div>
+            <label class="font-bold text-slate-600 block mb-0.5">Set Password</label>
+            <input type="password" id="manageUserPassword" placeholder="Default: 1234" class="w-full border rounded-xl p-2">
+          </div>
+          <div class="flex items-center gap-2 pt-1">
+            <input type="checkbox" id="manageUserActive" checked class="w-4 h-4 text-indigo-600 rounded">
+            <label for="manageUserActive" class="text-xs font-semibold text-slate-700">Account Active (Enabled)</label>
+          </div>
+        </div>
+        <button onclick="saveUserRecord()" class="w-full bg-indigo-600 text-white font-bold py-2 rounded-xl text-xs mt-1">Save User Account</button>
+      </div>
+    </div>
+
+    <!-- 7. ADMIN RESET USER PASSWORD MODAL -->
+    <div id="modalAdminResetPass" class="hidden fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-3">
+      <div class="bg-white rounded-3xl w-full max-w-sm p-4 space-y-3 shadow-2xl">
+        <div class="flex items-center justify-between border-b pb-2">
+          <h3 class="font-bold text-xs text-slate-800">Admin Password Reset</h3>
+          <button onclick="closeModal('modalAdminResetPass')" class="text-slate-400 text-sm"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <p class="text-xs text-slate-600">Resetting password for user: <strong id="adminResetTargetUser" class="text-indigo-600"></strong></p>
+        <div class="space-y-2 text-xs">
+          <div>
+            <label class="font-bold text-slate-600 block mb-0.5">New Password</label>
+            <input type="password" id="adminResetNewPass" placeholder="Enter new password" class="w-full border rounded-xl p-2">
+          </div>
+        </div>
+        <button onclick="commitAdminPasswordReset()" class="w-full bg-indigo-600 text-white font-bold py-2 rounded-xl text-xs mt-1">Confirm Reset</button>
+      </div>
+    </div>
+
+    <!-- 8. BULK COLLECTION MODAL (ADMIN ONLY) -->
+    <div id="modalBulkCollect" class="hidden fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-3">
+      <div class="bg-white rounded-3xl w-full max-w-sm max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+        <div class="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+          <div>
+            <h3 class="font-bold text-sm text-slate-800">Bulk Bill Collection</h3>
+            <p class="text-[10px] text-slate-500">Collect pending maintenance in batch</p>
+          </div>
+          <button onclick="closeModal('modalBulkCollect')" class="text-slate-400 text-sm"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="p-3 border-b border-slate-100 space-y-2 text-xs">
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Payment Date</label>
+              <input type="date" id="bulkCollectDate" class="w-full border rounded-xl p-1.5 text-xs bg-white">
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Filter Month</label>
+              <select id="bulkFilterMonth" onchange="renderBulkCollectList()" class="w-full border rounded-xl p-1.5 text-xs bg-white">
+                <option value="ALL">All Months</option>
+              </select>
+            </div>
+          </div>
+          <div class="flex items-center justify-between pt-1">
+            <label class="flex items-center gap-1.5 cursor-pointer">
+              <input type="checkbox" id="bulkSelectAllCheckbox" onchange="toggleBulkSelectAll(this.checked)" class="w-4 h-4 text-emerald-600 rounded">
+              <span class="text-xs font-bold text-slate-700">Select All Pending</span>
+            </label>
+            <span class="text-[10px] text-slate-500" id="bulkPendingAvailableCount">0 available</span>
+          </div>
+        </div>
+        <div class="p-3 flex-1 overflow-y-auto space-y-2" id="bulkCollectBillsList"></div>
+        <div class="p-3 border-t border-slate-100 bg-slate-50 space-y-2">
+          <div class="flex items-center justify-between text-xs">
+            <span class="text-slate-600 font-medium">Selected Total: <strong id="bulkCollectSelectedCount" class="text-slate-900">0 bills</strong></span>
+            <span class="font-black text-emerald-700 text-sm" id="bulkCollectTotalAmt">₹0</span>
+          </div>
+          <button onclick="commitBulkCollection()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-md shadow-emerald-200">
+            <i class="fa-solid fa-check-double"></i> Mark Selected as Paid
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 9. BILLS DOWNLOAD OPTIONS MODAL -->
+    <div id="modalBillsDownload" class="hidden fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-3">
+      <div class="bg-white rounded-3xl w-full max-w-sm p-4 space-y-3 shadow-2xl">
+        <div class="flex items-center justify-between border-b pb-2">
+          <h3 class="font-bold text-xs text-slate-800">Download Bills Ledger</h3>
+          <button onclick="closeModal('modalBillsDownload')" class="text-slate-400 text-sm"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="space-y-2 text-xs">
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="font-bold text-slate-600 block mb-0.5">Filter Status</label>
+              <select id="billsDownloadFilterStatus" class="w-full border rounded-xl p-2 bg-white text-xs">
+                <option value="ALL">All (Paid & Pending)</option>
+                <option value="Paid">Paid Only</option>
+                <option value="Pending">Pending Only</option>
+              </select>
+            </div>
+            <div>
+              <label class="font-bold text-slate-600 block mb-0.5">Filter Month</label>
+              <select id="billsDownloadFilterMonth" class="w-full border rounded-xl p-2 bg-white text-xs">
+                <option value="ALL">All Months</option>
+              </select>
+            </div>
+          </div>
+          <div class="space-y-2 pt-2">
+            <button onclick="exportBillsExcel()" class="w-full p-2.5 rounded-xl border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold flex items-center justify-between">
+              <span class="flex items-center gap-2"><i class="fa-solid fa-file-excel text-emerald-600"></i> Excel Ledger (.xlsx)</span>
+              <i class="fa-solid fa-download text-xs"></i>
+            </button>
+            <button onclick="exportBillsCSVFile()" class="w-full p-2.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-800 font-bold flex items-center justify-between">
+              <span class="flex items-center gap-2"><i class="fa-solid fa-file-csv text-slate-600"></i> Standard CSV (.csv)</span>
+              <i class="fa-solid fa-download text-xs"></i>
+            </button>
+            <button onclick="openPrintableBillsStatement()" class="w-full p-2.5 rounded-xl border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-indigo-800 font-bold flex items-center justify-between">
+              <span class="flex items-center gap-2"><i class="fa-solid fa-print text-indigo-600"></i> Printable Audit Statement</span>
+              <i class="fa-solid fa-chevron-right text-xs"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 10. EXPENSES DOWNLOAD MODAL (5 FORMAT OPTIONS) -->
+    <div id="modalExpenseDownload" class="hidden fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-3">
+      <div class="bg-white rounded-3xl w-full max-w-sm p-4 space-y-3 shadow-2xl">
+        <div class="flex items-center justify-between border-b pb-2">
+          <div>
+            <h3 class="font-bold text-xs text-slate-800">Download Society Expenses</h3>
+            <p class="text-[10px] text-slate-500">Choose export format</p>
+          </div>
+          <button onclick="closeModal('modalExpenseDownload')" class="text-slate-400 text-sm"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="space-y-2 text-xs">
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="font-bold text-slate-600 block mb-0.5">Filter Category</label>
+              <select id="expFilterCategory" class="w-full border rounded-xl p-1.5 text-xs bg-white">
+                <option value="ALL">All Categories</option>
+                <option value="Electricity">Electricity</option>
+                <option value="Water">Water Tanker</option>
+                <option value="Security">Security Guard</option>
+                <option value="Repairs">Repairs & Maintenance</option>
+                <option value="Cleaning">Cleaning & Sweeper</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div>
+              <label class="font-bold text-slate-600 block mb-0.5">Filter Period</label>
+              <select id="expFilterPeriod" class="w-full border rounded-xl p-1.5 text-xs bg-white">
+                <option value="ALL">All Time</option>
+                <option value="THIS_MONTH">This Month</option>
+              </select>
+            </div>
+          </div>
+          <div class="space-y-1.5 pt-1">
+            <!-- 1. Excel (Visible to All Users) -->
+            <button onclick="exportExpensesExcel()" class="w-full p-2.5 rounded-xl border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold flex items-center justify-between">
+              <span class="flex items-center gap-2"><i class="fa-solid fa-file-excel text-emerald-600"></i> Detailed Excel (.xlsx)</span>
+              <i class="fa-solid fa-download text-xs"></i>
+            </button>
+            
+            <!-- 2. PDF (Visible to All Users) -->
+            <button onclick="openPrintableExpenses()" class="w-full p-2.5 rounded-xl border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-indigo-800 font-bold flex items-center justify-between">
+              <span class="flex items-center gap-2"><i class="fa-solid fa-file-pdf text-indigo-600"></i> Printable PDF Statement</span>
+              <i class="fa-solid fa-chevron-right text-xs"></i>
+            </button>
+
+            <!-- Admin-only extra formats -->
+            <div id="adminExpenseExportOptions" class="space-y-1.5 pt-1">
+              <button onclick="exportExpensesCSV()" class="w-full p-2.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-800 font-bold flex items-center justify-between">
+                <span class="flex items-center gap-2"><i class="fa-solid fa-file-csv text-slate-600"></i> Standard CSV (.csv)</span>
+                <i class="fa-solid fa-download text-xs"></i>
+              </button>
+              <button onclick="exportCategoryBreakdownExcel()" class="w-full p-2.5 rounded-xl border border-amber-200 bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold flex items-center justify-between">
+                <span class="flex items-center gap-2"><i class="fa-solid fa-chart-pie text-amber-600"></i> Category-Wise Summary (.xlsx)</span>
+                <i class="fa-solid fa-download text-xs"></i>
+              </button>
+              <button onclick="exportExpensesJSON()" class="w-full p-2.5 rounded-xl border border-purple-200 bg-purple-50 hover:bg-purple-100 text-purple-800 font-bold flex items-center justify-between">
+                <span class="flex items-center gap-2"><i class="fa-solid fa-code text-purple-600"></i> Direct Database JSON (.json)</span>
+                <i class="fa-solid fa-download text-xs"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 11. PRINTABLE EXPENSES MODAL -->
+    <div id="modalPrintableExpenses" class="hidden fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-3">
+      <div class="bg-white rounded-3xl w-full max-w-sm max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+        <div class="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+          <div>
+            <h3 class="font-bold text-sm text-slate-800">Expense Statement</h3>
+            <p class="text-[10px] text-slate-500">DattaKrupa Society (दत्तकृपा सोसायटी)</p>
+          </div>
+          <button onclick="closeModal('modalPrintableExpenses')" class="text-slate-400 text-sm"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div id="expPrintArea" class="p-4 overflow-y-auto space-y-3 text-xs flex-1">
+          <div class="text-center pb-2 border-b border-slate-100">
+            <h4 class="font-black text-sm text-slate-900">DattaKrupa Society</h4>
+            <p class="text-[11px] font-medium text-slate-600">दत्तकृपा सोसायटी</p>
+            <p class="text-[9px] text-slate-400 mt-0.5" id="expPrintDate"></p>
+          </div>
+          <div class="p-2.5 bg-amber-50 rounded-xl text-center border border-amber-200">
+            <span class="text-[10px] text-amber-800 block">Total Expenditure:</span>
+            <strong class="text-base font-black text-amber-900" id="expPrintTotalAmt">₹0</strong>
+          </div>
+          <div class="space-y-1.5">
+            <span class="font-bold text-[11px] text-slate-700 block">Itemized Expense Records</span>
+            <div id="expPrintTable" class="border border-slate-200 rounded-lg overflow-hidden text-[10px]"></div>
+          </div>
+        </div>
+        <div class="p-3 border-t border-slate-100 bg-slate-50">
+          <div class="flex items-center gap-2">
+            <button onclick="downloadExpensePDF()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-md shadow-indigo-100">
+              <i class="fa-solid fa-file-pdf"></i> Download PDF
+            </button>
+            <button onclick="printExpenseStatement()" class="flex-1 bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 font-bold py-2 rounded-xl text-xs flex items-center justify-center gap-1.5">
+              <i class="fa-solid fa-print"></i> Print
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 12. ALL SOCIETY COLLECTIONS MODAL -->
+    <div id="modalAllCollections" class="hidden fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-3">
+      <div class="bg-white rounded-3xl w-full max-w-sm max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+        <div class="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+          <div>
+            <h3 class="font-bold text-sm text-slate-800">Society Collections & Dues Ledger</h3>
+            <p class="text-[10px] text-slate-500">DattaKrupa Society (दत्तकृपा सोसायटी)</p>
+          </div>
+          <button onclick="closeModal('modalAllCollections')" class="text-slate-400 text-sm"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="p-3 border-b border-slate-100 space-y-2">
+          <div class="flex items-center bg-slate-100 p-1 rounded-xl text-xs font-bold">
+            <button id="modalTabBtnMonth" onclick="switchModalCollectionTab('thisMonth')" class="flex-1 py-1.5 rounded-lg bg-white text-indigo-700 shadow-sm transition text-[11px]">
+              This Month
+            </button>
+            <button id="modalTabBtnAll" onclick="switchModalCollectionTab('allTime')" class="flex-1 py-1.5 rounded-lg text-slate-500 hover:text-slate-800 transition text-[11px]">
+              All Time
+            </button>
+          </div>
+          <input type="text" id="allCollModalSearch" oninput="populateAllCollectionsModalList()" placeholder="Filter flat or resident name..." 
+                 class="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          <div class="grid grid-cols-2 gap-2 pt-1">
+            <div class="bg-emerald-50 border border-emerald-200 p-2 rounded-xl text-center">
+              <span class="text-[9px] text-emerald-800 font-semibold block" id="allCollModalLabel">Collections:</span>
+              <span class="font-black text-emerald-700 text-xs" id="allCollModalGrandTotal">₹0</span>
+            </div>
+            <div class="bg-rose-50 border border-rose-200 p-2 rounded-xl text-center">
+              <span class="text-[9px] text-rose-800 font-semibold block">Pending Dues:</span>
+              <span class="font-black text-rose-700 text-xs" id="allCollModalGrandPending">₹0</span>
+            </div>
+          </div>
+        </div>
+        <div class="p-3 flex-1 overflow-y-auto space-y-2" id="allCollectionsListContainer"></div>
+        <div class="p-3 border-t border-slate-100 bg-slate-50 flex items-center justify-between gap-2">
+          <span class="text-[10px] text-slate-500" id="allCollModalCount">0 records</span>
+          <div class="flex items-center gap-1.5">
+            <button onclick="exportCollectionsPDF()" class="bg-rose-600 hover:bg-rose-700 text-white font-bold px-3 py-1.5 rounded-xl text-xs flex items-center gap-1.5 shadow-sm">
+              <i class="fa-solid fa-file-pdf"></i> Export PDF
+            </button>
+            <button onclick="printCollectionsDirect()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-2.5 py-1.5 rounded-xl text-xs flex items-center gap-1 shadow-sm border border-slate-200" title="Print Statement">
+              <i class="fa-solid fa-print"></i> Print
+            </button>
+            <button onclick="exportCollectionsCSV()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-3 py-1.5 rounded-xl text-xs flex items-center gap-1.5 shadow-sm">
+              <i class="fa-solid fa-file-csv"></i> Export CSV
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Hidden Dedicated Printable Container for Collections PDF Export -->
+    <div id="collectionsPdfExportModal" class="hidden fixed inset-0 bg-white z-[99999] overflow-y-auto p-8 text-slate-800">
+      <div id="collectionsPdfContent" class="max-w-2xl mx-auto bg-white p-6 border border-slate-200 rounded-xl">
+        <!-- Injected dynamically -->
+      </div>
+    </div>
+
+    <!-- 13. PAYMENT RECEIPT MODAL -->
+    <div id="modalReceipt" class="hidden fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-3">
+      <div class="bg-white rounded-3xl w-full max-w-sm max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+        <div class="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+          <div>
+            <h3 class="font-bold text-sm text-slate-800">Maintenance Receipt</h3>
+            <p class="text-[10px] text-slate-500">DattaKrupa Society (दत्तकृपा सोसायटी)</p>
+          </div>
+          <button onclick="closeModal('modalReceipt')" class="text-slate-400 text-sm"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div id="receiptPrintableArea" class="p-4 overflow-y-auto space-y-3 text-xs flex-1">
+          <div class="text-center pb-2 border-b border-slate-100">
+            <div class="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center mx-auto text-base mb-1 shadow-md shadow-indigo-100">
+              <i class="fa-solid fa-building-circle-check"></i>
+            </div>
+            <h4 class="font-black text-sm text-slate-900">DattaKrupa Society</h4>
+            <p class="text-[11px] font-semibold text-indigo-700">दत्तकृपा सोसायटी</p>
+            <p class="text-[9px] text-slate-400 mt-0.5">Official Payment Receipt</p>
+          </div>
+          <div class="space-y-2 bg-slate-50 p-3 rounded-2xl border border-slate-100">
+            <div class="flex justify-between items-center">
+              <span class="text-slate-500 text-[10px]">Receipt No:</span>
+              <strong class="font-mono text-indigo-700 text-xs" id="recModalReceiptNo">-</strong>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-slate-500 text-[10px]">Payment Date:</span>
+              <span class="font-semibold text-slate-700 text-xs" id="recModalPaidOn">-</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-slate-500 text-[10px]">Flat Number:</span>
+              <span class="font-bold text-slate-900 text-xs" id="recModalFlat">-</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-slate-500 text-[10px]">Member / Resident:</span>
+              <span class="font-semibold text-slate-800 text-xs" id="recModalOwner">-</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-slate-500 text-[10px]">Billing Month:</span>
+              <span class="font-semibold text-slate-800 text-xs" id="recModalMonth">-</span>
+            </div>
+          </div>
+          <div class="p-3 bg-emerald-50 rounded-2xl border border-emerald-200 text-center">
+            <span class="text-[10px] text-emerald-800 font-semibold block">Total Amount Received</span>
+            <strong class="text-lg font-black text-emerald-700" id="recModalAmount">₹0</strong>
+            <p class="text-[9px] text-emerald-600 mt-0.5 font-bold"><i class="fa-solid fa-circle-check"></i> Payment Status: Verified Paid</p>
+          </div>
+          <div class="pt-2 text-center text-[9px] text-slate-400">
+            Computer generated maintenance receipt • DattaKrupa Society
+          </div>
+        </div>
+        <div class="p-3 border-t border-slate-100 bg-slate-50 flex items-center gap-2">
+          <button onclick="downloadReceiptPDF()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-sm">
+            <i class="fa-solid fa-file-pdf"></i> Save PDF
+          </button>
+          <button onclick="printReceiptDirect()" class="flex-1 bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 font-bold py-2 rounded-xl text-xs flex items-center justify-center gap-1.5">
+            <i class="fa-solid fa-print"></i> Print
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 14. SUMMARY REPORT MODAL -->
+    <div id="summaryModal" class="hidden fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-3">
+      <div class="bg-white rounded-3xl w-full max-w-sm max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+        <div class="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+          <div>
+            <h3 class="font-bold text-sm text-slate-800">Financial Statement</h3>
+            <p class="text-[10px] text-slate-500">DattaKrupa Society (दत्तकृपा सोसायटी)</p>
+          </div>
+          <button onclick="closeSummaryModal()" class="text-slate-400 text-sm"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="p-3 border-b border-slate-100 bg-slate-50/50 space-y-2 text-xs">
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Filter Month</label>
+              <select id="summaryFilterMonth" onchange="renderSummaryModalContent()" class="w-full border rounded-xl p-1.5 text-xs bg-white"></select>
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Filter Flat</label>
+              <select id="summaryFilterFlat" onchange="renderSummaryModalContent()" class="w-full border rounded-xl p-1.5 text-xs bg-white"></select>
+            </div>
+          </div>
+        </div>
+        <div id="printableArea" class="p-4 overflow-y-auto space-y-3 text-xs flex-1">
+          <div class="text-center pb-2 border-b border-slate-100">
+            <h4 class="font-black text-sm text-slate-900">DattaKrupa Society</h4>
+            <p class="text-[11px] font-medium text-slate-600">दत्तकृपा सोसायटी</p>
+            <p class="text-[9px] text-slate-400 mt-0.5" id="summaryPrintDate"></p>
+          </div>
+          <div class="grid grid-cols-2 gap-2 text-center py-2 bg-slate-50 rounded-xl">
+            <div>
+              <span class="text-[9px] text-slate-500 block">Total Collections</span>
+              <strong class="text-indigo-700 text-xs" id="summaryPrintColl">₹0</strong>
+            </div>
+            <div>
+              <span class="text-[9px] text-slate-500 block">Total Expenses</span>
+              <strong class="text-amber-700 text-xs" id="summaryPrintExp">₹0</strong>
+            </div>
+            <div>
+              <span class="text-[9px] text-slate-500 block">Total Outstanding</span>
+              <strong class="text-rose-700 text-xs" id="summaryPrintPend">₹0</strong>
+            </div>
+            <div>
+              <span class="text-[9px] text-slate-500 block">Net Reserve</span>
+              <strong class="text-emerald-700 text-xs" id="summaryPrintBal">₹0</strong>
+            </div>
+          </div>
+          <div class="space-y-1.5">
+            <span class="font-bold text-[11px] text-slate-700 block">Detailed Flat Breakdown</span>
+            <div id="summaryFlatsTable" class="border border-slate-200 rounded-lg overflow-hidden text-[10px]"></div>
+          </div>
+        </div>
+        <div class="p-3 border-t border-slate-100 bg-slate-50 flex items-center gap-2">
+          <button onclick="downloadSummaryPDF()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-sm">
+            <i class="fa-solid fa-file-pdf"></i> Save PDF
+          </button>
+          <button onclick="printSummaryStatement()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2 rounded-xl text-xs flex items-center justify-center gap-1.5">
+            <i class="fa-solid fa-print"></i> Print
+          </button>
+          <button onclick="downloadSummaryCSV()" class="flex-1 bg-white border border-slate-200 text-slate-700 font-bold py-2 rounded-xl text-xs flex items-center justify-center gap-1.5">
+            <i class="fa-solid fa-file-csv"></i> CSV
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 15. MODAL: ADD BILL -->
+    <div id="modalAddBill" class="hidden fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-3">
+      <div class="bg-white rounded-3xl w-full max-w-sm p-4 space-y-3 shadow-2xl">
+        <div class="flex items-center justify-between border-b pb-2">
+          <h3 class="font-bold text-xs text-slate-800">Generate Maintenance Bill</h3>
+          <button onclick="closeModal('modalAddBill')" class="text-slate-400 text-sm"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="space-y-2 text-xs">
+          <div>
+            <label class="font-bold text-slate-600 block mb-0.5">Select Flat</label>
+            <select id="billFlatSelect" onchange="autoFillBillAmount()" class="w-full border rounded-xl p-2 bg-white text-xs"></select>
+          </div>
+          <div>
+            <label class="font-bold text-slate-600 block mb-0.5">Billing Month</label>
+            <input type="text" id="billMonth" placeholder="e.g. November 2026" class="w-full border rounded-xl p-2 text-xs">
+          </div>
+          <div id="billAmountContainer">
+            <label class="font-bold text-slate-600 block mb-0.5">Amount (₹)</label>
+            <input type="number" id="billAmount" placeholder="2000" class="w-full border rounded-xl p-2 text-xs">
+          </div>
+          <div>
+            <label class="font-bold text-slate-600 block mb-0.5">Payment Status</label>
+            <select id="billStatus" class="w-full border rounded-xl p-2 bg-white text-xs">
+              <option value="Pending">Pending</option>
+              <option value="Paid">Paid</option>
+            </select>
+          </div>
+        </div>
+        <button onclick="saveNewBill()" class="w-full bg-indigo-600 text-white font-bold py-2 rounded-xl text-xs mt-1">Save Bill</button>
+      </div>
+    </div>
+
+    <!-- 16. MODAL: ADD EXPENSE -->
+    <div id="modalAddExpense" class="hidden fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-3">
+      <div class="bg-white rounded-3xl w-full max-w-sm p-4 space-y-3 shadow-2xl">
+        <div class="flex items-center justify-between border-b pb-2">
+          <h3 class="font-bold text-xs text-slate-800">Record Society Expense</h3>
+          <button onclick="closeModal('modalAddExpense')" class="text-slate-400 text-sm"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="space-y-2 text-xs">
+          <div>
+            <label class="font-bold text-slate-600 block mb-0.5">Expense Description</label>
+            <input type="text" id="expTitle" placeholder="e.g. Lift Servicing / Pump Repair" class="w-full border rounded-xl p-2 text-xs">
+          </div>
+          <div>
+            <label class="font-bold text-slate-600 block mb-0.5">Category</label>
+            <select id="expCategory" class="w-full border rounded-xl p-2 bg-white text-xs">
+              <option value="Electricity">Electricity</option>
+              <option value="Water">Water Tanker</option>
+              <option value="Security">Security Guard</option>
+              <option value="Repairs">Repairs & Maintenance</option>
+              <option value="Cleaning">Cleaning & Sweeper</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div>
+            <label class="font-bold text-slate-600 block mb-0.5">Amount (₹)</label>
+            <input type="number" id="expAmount" placeholder="1500" class="w-full border rounded-xl p-2 text-xs">
+          </div>
+          <div>
+            <label class="font-bold text-slate-600 block mb-0.5">Date</label>
+            <input type="date" id="expDate" class="w-full border rounded-xl p-2 text-xs">
+          </div>
+        </div>
+        <button onclick="saveNewExpense()" class="w-full bg-amber-600 text-white font-bold py-2 rounded-xl text-xs mt-1">Save Expense</button>
+      </div>
+    </div>
+
+    <!-- 17. MODAL: ADD / EDIT FLAT -->
+    <div id="modalAddFlat" class="hidden fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-3">
+      <div class="bg-white rounded-3xl w-full max-w-sm p-4 space-y-3 shadow-2xl">
+        <div class="flex items-center justify-between border-b pb-2">
+          <h3 class="font-bold text-xs text-slate-800" id="flatModalTitle">Add Flat / Member</h3>
+          <button onclick="closeModal('modalAddFlat')" class="text-slate-400 text-sm"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <input type="hidden" id="manageFlatMode" value="create">
+        <input type="hidden" id="manageFlatOriginalId" value="">
+        <div class="space-y-2 text-xs">
+          <div>
+            <label class="font-bold text-slate-600 block mb-0.5">Flat Number</label>
+            <input type="text" id="flatId" placeholder="e.g. C-302" class="w-full border rounded-xl p-2 text-xs">
+          </div>
+          <div>
+            <label class="font-bold text-slate-600 block mb-0.5">Owner / Resident Name</label>
+            <input type="text" id="flatOwner" placeholder="Resident Name" class="w-full border rounded-xl p-2 text-xs">
+          </div>
+          <div>
+            <label class="font-bold text-slate-600 block mb-0.5">Phone Number</label>
+            <input type="tel" id="flatContact" placeholder="98XXXXXXXX" class="w-full border rounded-xl p-2 text-xs">
+          </div>
+          <div>
+            <label class="font-bold text-slate-600 block mb-0.5">Monthly Maintenance (₹)</label>
+            <input type="number" id="flatMaintenance" placeholder="2000" class="w-full border rounded-xl p-2 text-xs">
+          </div>
+        </div>
+        <button onclick="saveNewFlat()" class="w-full bg-indigo-600 text-white font-bold py-2 rounded-xl text-xs mt-1">Save Flat</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- JAVASCRIPT LOGIC -->
+  <script>
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbzrMBLWzjPv_xAJLmitPcPQ7u6gAwuxIBZFrWkE7oK1hL-sqlrjnFhlJfCIH2j7YJWWiQ/exec";
+    const FOLDER_ID = "1R5EJDh0svSkoAM-yo1KeSyU87xJYOaGC";
+    const LOCAL_STORAGE_KEY = "dattakrupa_society_db_v5";
+
+    let db = {
+      society: "DattaKrupa Society (दत्तकृपा सोसायटी)",
+      users: [
+        { username: "admin", name: "Society Admin", role: "admin", password: "1234", active: true, flatId: "" },
+        { username: "secretary", name: "Sagar Patil (Secretary)", role: "committee", password: "1234", active: true, flatId: "B-201" },
+        { username: "A-101", name: "Ramesh Sharma", role: "flat_owner", password: "1234", active: true, flatId: "A-101" },
+        { username: "A-102", name: "Suresh Patil", role: "flat_owner", password: "1234", active: true, flatId: "A-102" },
+        { username: "B-201", name: "Amit Deshmukh", role: "flat_owner", password: "1234", active: true, flatId: "B-201" },
+        { username: "B-202", name: "Vikram Joshi", role: "flat_owner", password: "1234", active: true, flatId: "B-202" }
+      ],
+      flats: [
+        { id: "A-101", owner: "Ramesh Sharma", contact: "9876543210", maintenance: 2000 },
+        { id: "A-102", owner: "Suresh Patil", contact: "9876543211", maintenance: 2000 },
+        { id: "B-201", owner: "Amit Deshmukh", contact: "9876543212", maintenance: 2200 },
+        { id: "B-202", owner: "Vikram Joshi", contact: "9876543213", maintenance: 2200 }
+      ],
+      bills: [
+        { id: "BILL-1001", flatId: "A-101", month: "November 2026", amount: 2000, status: "Paid", paidOn: "2026-11-02", receiptNo: "REC-8821" },
+        { id: "BILL-1002", flatId: "A-102", month: "November 2026", amount: 2000, status: "Pending", paidOn: "-", receiptNo: "-" },
+        { id: "BILL-1003", flatId: "B-201", month: "November 2026", amount: 2200, status: "Paid", paidOn: "2026-11-04", receiptNo: "REC-8822" },
+        { id: "BILL-1004", flatId: "B-202", month: "November 2026", amount: 2200, status: "Pending", paidOn: "-", receiptNo: "-" }
+      ],
+      expenses: [
+        { id: "EXP-101", title: "Security Guard Salary", category: "Security", amount: 12000, date: "2026-11-01" },
+        { id: "EXP-102", title: "Water Tanker Refill", category: "Water", amount: 3500, date: "2026-11-03" }
+      ],
+      lastUpdated: new Date().toISOString()
+    };
+
+    let currentUser = null;
+    let activeRecentCollectionTab = 'thisMonth';
+    let activeModalCollectionTab = 'thisMonth';
+    let selectedBulkBillIds = new Set();
+    let stagedMasterRows = [];
+    let stagedBillsRows = [];
+    let autoSyncTimer = null;
+    let targetResetUsername = null;
+    let pendingConfirmAction = null;
+
+    // Toast and Confirm Modal replacements for alert() and confirm()
+    function showToast(message, type = "success") {
+      const toast = document.getElementById('toastNotification');
+      const msg = document.getElementById('toastMsg');
+      const icon = document.getElementById('toastIcon');
+      if (!toast || !msg) return;
+
+      msg.innerText = message;
+      if (type === "error") {
+        toast.className = "fixed top-4 z-[9999] max-w-xs px-4 py-2.5 rounded-2xl shadow-xl text-xs font-bold text-white bg-rose-600 flex items-center gap-2";
+        icon.className = "fa-solid fa-circle-exclamation text-sm";
+      } else {
+        toast.className = "fixed top-4 z-[9999] max-w-xs px-4 py-2.5 rounded-2xl shadow-xl text-xs font-bold text-white bg-emerald-600 flex items-center gap-2";
+        icon.className = "fa-solid fa-circle-check text-sm";
+      }
+      toast.classList.remove('hidden');
+      setTimeout(() => { toast.classList.add('hidden'); }, 3000);
+    }
+
+    function openConfirmModal(title, message, callback) {
+      document.getElementById('confirmModalTitle').innerText = title;
+      document.getElementById('confirmModalMessage').innerText = message;
+      pendingConfirmAction = callback;
+      openModal('modalConfirmAction');
+    }
+
+    function closeConfirmModal(execute = false) {
+      closeModal('modalConfirmAction');
+      if (!execute) pendingConfirmAction = null;
+    }
+
+    function executePendingConfirm() {
+      if (typeof pendingConfirmAction === 'function') {
+        const action = pendingConfirmAction;
+        pendingConfirmAction = null;
+        closeConfirmModal(true);
+        action();
+      } else {
+        closeConfirmModal(false);
+      }
+    }
+
+    // PDF and Print Generators
+    function downloadReceiptPDF() {
+      const element = document.getElementById('receiptPrintableArea');
+      const opt = {
+        margin: [10, 10, 10, 10],
+        filename: `Receipt_${document.getElementById('recModalReceiptNo').innerText || 'Payment'}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'mm', format: 'a5', orientation: 'portrait' }
+      };
+      html2pdf().set(opt).from(element).save();
+    }
+
+    function downloadExpensePDF() {
+      const element = document.getElementById('expPrintArea');
+      const opt = {
+        margin: [10, 10, 10, 10],
+        filename: `Expenses_Statement_${Date.now()}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      };
+      html2pdf().set(opt).from(element).save();
+    }
+
+    function downloadSummaryPDF() {
+      const selMonth = document.getElementById('summaryFilterMonth')?.value || "ALL";
+      const selFlat = document.getElementById('summaryFilterFlat')?.value || "ALL";
+
+      let activeBills = db.bills;
+      if (selMonth !== "ALL") activeBills = activeBills.filter(b => b.month === selMonth);
+      if (selFlat !== "ALL") activeBills = activeBills.filter(b => isFlatMatch(b.flatId, selFlat));
+
+      const totalColl = activeBills.filter(b => b.status === "Paid").reduce((sum, b) => sum + Number(b.amount || 0), 0);
+      const totalPend = activeBills.filter(b => b.status === "Pending").reduce((sum, b) => sum + Number(b.amount || 0), 0);
+      const totalExp = db.expenses.reduce((sum, e) => sum + Number(e.amount || 0), 0);
+      const netReserve = totalColl - totalExp;
+
+      // Aggregate all flats
+      const flatMap = new Map();
+      db.flats.forEach(f => {
+        const cleanKey = f.id.replace(/^[a-zA-Z]-/, '').trim().toUpperCase();
+        flatMap.set(cleanKey, { id: f.id, displayId: cleanKey, owner: f.owner, maintenance: f.maintenance });
+      });
+      db.bills.forEach(b => {
+        const cleanKey = b.flatId.replace(/^[a-zA-Z]-/, '').trim().toUpperCase();
+        if (!flatMap.has(cleanKey)) {
+          flatMap.set(cleanKey, { id: b.flatId, displayId: cleanKey, owner: `Member ${cleanKey}`, maintenance: b.amount });
+        }
+      });
+
+      let flats = Array.from(flatMap.values());
+      if (selFlat !== "ALL") {
+        flats = flats.filter(f => isFlatMatch(f.id, selFlat) || isFlatMatch(f.displayId, selFlat));
+      }
+      flats.sort((a, b) => a.displayId.localeCompare(b.displayId, undefined, { numeric: true }));
+
+      const exportModal = document.getElementById('summaryPdfExportModal');
+      const exportContent = document.getElementById('summaryPdfContent');
+
+      exportContent.innerHTML = `
+        <div style="font-family: Arial, Helvetica, sans-serif; color: #1e293b; line-height: 1.35; width: 100%; max-width: 760px; margin: 0 auto; padding: 10px;">
+          <!-- Header -->
+          <div style="text-align: center; border-bottom: 2px solid #334155; padding-bottom: 8px; margin-bottom: 12px;">
+            <h2 style="margin: 0; font-size: 20px; font-weight: 800; color: #0f172a;">DattaKrupa Society</h2>
+            <p style="margin: 2px 0 0; font-size: 13px; font-weight: 700; color: #4338ca;">दत्तकृपा सोसायटी</p>
+            <h3 style="margin: 4px 0 0; font-size: 13px; font-weight: 700; color: #1e293b;">Financial Statement & Flat Audit</h3>
+            <p style="margin: 3px 0 0; font-size: 10px; color: #64748b;">Generated on: ${new Date().toLocaleDateString('en-IN')} • Filter: Month: ${selMonth}, Flat: ${selFlat}</p>
+          </div>
+
+          <!-- Top 4 Summary Cards -->
+          <table style="width: 100%; margin-bottom: 14px; border-collapse: separate; border-spacing: 6px;">
+            <tr>
+              <td style="width: 25%; padding: 8px 10px; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; text-align: center;">
+                <span style="font-size: 9px; font-weight: bold; color: #64748b; display: block; text-transform: uppercase;">Total Collections</span>
+                <span style="font-size: 14px; font-weight: 900; color: #4338ca;">₹${totalColl.toLocaleString('en-IN')}</span>
+              </td>
+              <td style="width: 25%; padding: 8px 10px; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; text-align: center;">
+                <span style="font-size: 9px; font-weight: bold; color: #64748b; display: block; text-transform: uppercase;">Total Expenses</span>
+                <span style="font-size: 14px; font-weight: 900; color: #b45309;">₹${totalExp.toLocaleString('en-IN')}</span>
+              </td>
+              <td style="width: 25%; padding: 8px 10px; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; text-align: center;">
+                <span style="font-size: 9px; font-weight: bold; color: #64748b; display: block; text-transform: uppercase;">Total Outstanding</span>
+                <span style="font-size: 14px; font-weight: 900; color: #be123c;">₹${totalPend.toLocaleString('en-IN')}</span>
+              </td>
+              <td style="width: 25%; padding: 8px 10px; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; text-align: center;">
+                <span style="font-size: 9px; font-weight: bold; color: #64748b; display: block; text-transform: uppercase;">Net Reserve</span>
+                <span style="font-size: 14px; font-weight: 900; color: ${netReserve >= 0 ? '#047857' : '#be123c'};">₹${netReserve.toLocaleString('en-IN')}</span>
+              </td>
+            </tr>
+          </table>
+
+          <!-- Detailed Flat Breakdown Section -->
+          <div style="margin-bottom: 6px;">
+            <span style="font-size: 11px; font-weight: 800; color: #0f172a; text-transform: uppercase; letter-spacing: 0.5px;">Detailed Flat Breakdown</span>
+          </div>
+
+          <table style="width: 100%; border-collapse: collapse; font-size: 10px; text-align: left;">
+            <thead>
+              <tr style="background-color: #f1f5f9; border-top: 1px solid #cbd5e1; border-bottom: 2px solid #94a3b8;">
+                <th style="padding: 6px 5px; font-weight: bold; color: #0f172a; width: 12%;">Flat</th>
+                <th style="padding: 6px 5px; font-weight: bold; color: #0f172a; width: 28%;">Member</th>
+                <th style="padding: 6px 5px; font-weight: bold; color: #0f172a; width: 20%;">This Month Due</th>
+                <th style="padding: 6px 5px; font-weight: bold; color: #0f172a; width: 22%;">Total Paid Till Date</th>
+                <th style="padding: 6px 5px; font-weight: bold; color: #0f172a; width: 18%;">Total Pending</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${flats.map((f, idx) => {
+                const flatBills = db.bills.filter(b => isFlatMatch(b.flatId, f.id) || isFlatMatch(b.flatId, f.displayId));
+                
+                // All-time paid
+                const fPaid = flatBills
+                  .filter(b => b.status === 'Paid')
+                  .reduce((s, b) => s + Number(b.amount || 0), 0);
+
+                // All-time pending recorded in bills
+                const recordedPending = flatBills
+                  .filter(b => b.status === 'Pending')
+                  .reduce((s, b) => s + Number(b.amount || 0), 0);
+
+                // Current cycle check: whether this month's bill is paid or pending
+                const currentMonthBill = flatBills.find(b => isBillOfCurrentMonth(b));
+                let fMonthPending = 0;
+                if (currentMonthBill) {
+                  if (currentMonthBill.status === 'Pending') fMonthPending = Number(currentMonthBill.amount || 0);
+                } else {
+                  // If no bill generated yet for current month and flat has not paid ahead
+                  fMonthPending = Number(f.maintenance || 2000);
+                }
+
+                // Total pending must include recorded pending bills + unbilled current month due
+                const fPend = Math.max(recordedPending, recordedPending + (currentMonthBill ? 0 : fMonthPending));
+
+                const bg = idx % 2 === 0 ? '#ffffff' : '#f8fafc';
+
+                return `
+                  <tr style="background-color: ${bg}; border-bottom: 1px solid #e2e8f0; page-break-inside: avoid; break-inside: avoid;">
+                    <td style="padding: 6px 5px; font-weight: bold; color: #0f172a;">${f.displayId || f.id}</td>
+                    <td style="padding: 6px 5px; color: #1e293b;">${f.owner}</td>
+                    <td style="padding: 6px 5px; font-weight: bold; color: ${fMonthPending > 0 ? '#be123c' : '#047857'};">₹${fMonthPending}</td>
+                    <td style="padding: 6px 5px; font-weight: bold; color: #047857;">₹${fPaid}</td>
+                    <td style="padding: 6px 5px; font-weight: bold; color: ${fPend > 0 ? '#be123c' : '#64748b'};">₹${fPend}</td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+
+          <div style="margin-top: 14px; padding-top: 8px; border-top: 1px solid #cbd5e1; text-align: center; font-size: 9px; color: #64748b;">
+            DattaKrupa Society • Official Financial Audit Statement • All Flats Verified
+          </div>
+        </div>
+      `;
+
+      exportModal.classList.remove('hidden');
+      showToast("Generating Statement PDF...", "success");
+
+      setTimeout(() => {
+        const opt = {
+          margin: [6, 6, 6, 6],
+          filename: `DattaKrupa_Financial_Statement_${Date.now()}.pdf`,
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: { scale: 2, useCORS: true, logging: false, scrollY: 0 },
+          pagebreak: { mode: ['avoid-all', 'css', 'legacy'] },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+
+        html2pdf().set(opt).from(exportContent).save().then(() => {
+          exportModal.classList.add('hidden');
+        }).catch(err => {
+          console.error("Statement PDF failed:", err);
+          exportModal.classList.add('hidden');
+          showToast("PDF save failed, opening printer...", "error");
+          printSummaryStatement();
+        });
+      }, 250);
+    }
+
+    function printCleanContent(title, html) {
+      const win = window.open('', '_blank');
+      if (!win) {
+        showToast("Please allow popups to print", "error");
+        return;
+      }
+      win.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>${title}</title>
+          <script src="https://cdn.tailwindcss.com"><\/script>
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 20px; }
+          </style>
+        </head>
+        <body>
+          <div class="max-w-xl mx-auto">${html}</div>
+          <script>
+            window.onload = function() { window.print(); window.close(); }
+          <\/script>
+        </body>
+        </html>
+      `);
+      win.document.close();
+    }
+
+    function printReceiptDirect() {
+      const html = document.getElementById('receiptPrintableArea').innerHTML;
+      printCleanContent("Payment Receipt", html);
+    }
+
+    function printExpenseStatement() {
+      const html = document.getElementById('expPrintArea').innerHTML;
+      printCleanContent("Expense Statement", html);
+    }
+
+    function printSummaryStatement() {
+      const selMonth = document.getElementById('summaryFilterMonth')?.value || "ALL";
+      const selFlat = document.getElementById('summaryFilterFlat')?.value || "ALL";
+
+      let activeBills = db.bills;
+      if (selMonth !== "ALL") activeBills = activeBills.filter(b => b.month === selMonth);
+      if (selFlat !== "ALL") activeBills = activeBills.filter(b => isFlatMatch(b.flatId, selFlat));
+
+      const totalColl = activeBills.filter(b => b.status === "Paid").reduce((sum, b) => sum + Number(b.amount || 0), 0);
+      const totalPend = activeBills.filter(b => b.status === "Pending").reduce((sum, b) => sum + Number(b.amount || 0), 0);
+      const totalExp = db.expenses.reduce((sum, e) => sum + Number(e.amount || 0), 0);
+      const netReserve = totalColl - totalExp;
+
+      const flatMap = new Map();
+      db.flats.forEach(f => {
+        const cleanKey = f.id.replace(/^[a-zA-Z]-/, '').trim().toUpperCase();
+        flatMap.set(cleanKey, { id: f.id, displayId: cleanKey, owner: f.owner, maintenance: f.maintenance });
+      });
+      db.bills.forEach(b => {
+        const cleanKey = b.flatId.replace(/^[a-zA-Z]-/, '').trim().toUpperCase();
+        if (!flatMap.has(cleanKey)) {
+          flatMap.set(cleanKey, { id: b.flatId, displayId: cleanKey, owner: `Member ${cleanKey}`, maintenance: b.amount });
+        }
+      });
+
+      let flats = Array.from(flatMap.values());
+      if (selFlat !== "ALL") {
+        flats = flats.filter(f => isFlatMatch(f.id, selFlat) || isFlatMatch(f.displayId, selFlat));
+      }
+      flats.sort((a, b) => a.displayId.localeCompare(b.displayId, undefined, { numeric: true }));
+
+      const html = `
+        <div style="font-family: Arial, Helvetica, sans-serif; color: #1e293b; line-height: 1.35; padding: 10px;">
+          <div style="text-align: center; border-bottom: 2px solid #334155; padding-bottom: 8px; margin-bottom: 12px;">
+            <h2 style="margin: 0; font-size: 20px; font-weight: 800; color: #0f172a;">DattaKrupa Society</h2>
+            <p style="margin: 2px 0 0; font-size: 13px; font-weight: 700; color: #4338ca;">दत्तकृपा सोसायटी</p>
+            <h3 style="margin: 4px 0 0; font-size: 13px; font-weight: 700; color: #1e293b;">Financial Statement & Flat Audit</h3>
+            <p style="margin: 3px 0 0; font-size: 10px; color: #64748b;">Generated on: ${new Date().toLocaleDateString('en-IN')} • Filter: Month: ${selMonth}, Flat: ${selFlat}</p>
+          </div>
+
+          <table style="width: 100%; margin-bottom: 14px; border-collapse: separate; border-spacing: 6px;">
+            <tr>
+              <td style="width: 25%; padding: 8px 10px; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; text-align: center;">
+                <span style="font-size: 9px; font-weight: bold; color: #64748b; display: block; text-transform: uppercase;">Total Collections</span>
+                <span style="font-size: 14px; font-weight: 900; color: #4338ca;">₹${totalColl.toLocaleString('en-IN')}</span>
+              </td>
+              <td style="width: 25%; padding: 8px 10px; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; text-align: center;">
+                <span style="font-size: 9px; font-weight: bold; color: #64748b; display: block; text-transform: uppercase;">Total Expenses</span>
+                <span style="font-size: 14px; font-weight: 900; color: #b45309;">₹${totalExp.toLocaleString('en-IN')}</span>
+              </td>
+              <td style="width: 25%; padding: 8px 10px; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; text-align: center;">
+                <span style="font-size: 9px; font-weight: bold; color: #64748b; display: block; text-transform: uppercase;">Total Outstanding</span>
+                <span style="font-size: 14px; font-weight: 900; color: #be123c;">₹${totalPend.toLocaleString('en-IN')}</span>
+              </td>
+              <td style="width: 25%; padding: 8px 10px; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; text-align: center;">
+                <span style="font-size: 9px; font-weight: bold; color: #64748b; display: block; text-transform: uppercase;">Net Reserve</span>
+                <span style="font-size: 14px; font-weight: 900; color: ${netReserve >= 0 ? '#047857' : '#be123c'};">₹${netReserve.toLocaleString('en-IN')}</span>
+              </td>
+            </tr>
+          </table>
+
+          <div style="margin-bottom: 6px;">
+            <span style="font-size: 11px; font-weight: 800; color: #0f172a; text-transform: uppercase; letter-spacing: 0.5px;">Detailed Flat Breakdown</span>
+          </div>
+
+          <table style="width: 100%; border-collapse: collapse; font-size: 10px; text-align: left;">
+            <thead>
+              <tr style="background-color: #f1f5f9; border-top: 1px solid #cbd5e1; border-bottom: 2px solid #94a3b8;">
+                <th style="padding: 6px 5px; font-weight: bold; color: #0f172a; width: 12%;">Flat</th>
+                <th style="padding: 6px 5px; font-weight: bold; color: #0f172a; width: 28%;">Member</th>
+                <th style="padding: 6px 5px; font-weight: bold; color: #0f172a; width: 20%;">This Month Due</th>
+                <th style="padding: 6px 5px; font-weight: bold; color: #0f172a; width: 22%;">Total Paid Till Date</th>
+                <th style="padding: 6px 5px; font-weight: bold; color: #0f172a; width: 18%;">Total Pending</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${flats.map((f, idx) => {
+                const flatBills = db.bills.filter(b => isFlatMatch(b.flatId, f.id) || isFlatMatch(b.flatId, f.displayId));
+                
+                const fPaid = flatBills
+                  .filter(b => b.status === 'Paid')
+                  .reduce((s, b) => s + Number(b.amount || 0), 0);
+
+                const recordedPending = flatBills
+                  .filter(b => b.status === 'Pending')
+                  .reduce((s, b) => s + Number(b.amount || 0), 0);
+
+                const currentMonthBill = flatBills.find(b => isBillOfCurrentMonth(b));
+                let fMonthPending = 0;
+                if (currentMonthBill) {
+                  if (currentMonthBill.status === 'Pending') fMonthPending = Number(currentMonthBill.amount || 0);
+                } else {
+                  fMonthPending = Number(f.maintenance || 2000);
+                }
+
+                const fPend = Math.max(recordedPending, recordedPending + (currentMonthBill ? 0 : fMonthPending));
+
+                const bg = idx % 2 === 0 ? '#ffffff' : '#f8fafc';
+
+                return `
+                  <tr style="background-color: ${bg}; border-bottom: 1px solid #e2e8f0;">
+                    <td style="padding: 6px 5px; font-weight: bold; color: #0f172a;">${f.displayId || f.id}</td>
+                    <td style="padding: 6px 5px; color: #1e293b;">${f.owner}</td>
+                    <td style="padding: 6px 5px; font-weight: bold; color: ${fMonthPending > 0 ? '#be123c' : '#047857'};">₹${fMonthPending}</td>
+                    <td style="padding: 6px 5px; font-weight: bold; color: #047857;">₹${fPaid}</td>
+                    <td style="padding: 6px 5px; font-weight: bold; color: ${fPend > 0 ? '#be123c' : '#64748b'};">₹${fPend}</td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+      `;
+
+      printCleanContent("DattaKrupa Society - Financial Statement", html);
+    }
+
+    // Helper functions for month checking
+    function getCurrentMonthYearStrings() {
+      const now = new Date();
+      const currentMonthLong = now.toLocaleString('en-US', { month: 'long' });
+      const currentYear = now.getFullYear();
+      const currentMonthYear = `${currentMonthLong} ${currentYear}`;
+      const currentYearMonthPrefix = `${currentYear}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+      return { currentMonthYear, currentYearMonthPrefix };
+    }
+
+    // Determine the active billing cycle month from the bills or fallback to current calendar month
+    function getActiveBillingMonth() {
+      const { currentMonthYear } = getCurrentMonthYearStrings();
+      if (!db.bills || db.bills.length === 0) return currentMonthYear;
+      
+      // If any bills exist explicitly for currentMonthYear, use that
+      const exactMatch = db.bills.find(b => b.month && b.month.trim().toLowerCase() === currentMonthYear.trim().toLowerCase());
+      if (exactMatch) return exactMatch.month;
+
+      // Otherwise take the latest month present in bills
+      return db.bills[db.bills.length - 1].month || currentMonthYear;
+    }
+
+    function isBillOfCurrentMonth(bill) {
+      if (!bill || !bill.month) return false;
+      const activeMonth = getActiveBillingMonth();
+      return bill.month.trim().toLowerCase() === activeMonth.trim().toLowerCase();
+    }
+
+    function isPaidInThisMonth(bill) {
+      if (!bill || bill.status !== "Paid") return false;
+      // Consistent with billing month cycle: bill is paid and belongs to this billing month
+      return isBillOfCurrentMonth(bill);
+    }
+
+    // Normalized flat matcher (handles '202' vs 'B-202', 'A-101' vs '101')
+    function isFlatMatch(id1, id2) {
+      if (!id1 || !id2) return false;
+      const s1 = String(id1).trim().toLowerCase();
+      const s2 = String(id2).trim().toLowerCase();
+      if (s1 === s2) return true;
+      const clean1 = s1.replace(/^[a-z]-/, '');
+      const clean2 = s2.replace(/^[a-z]-/, '');
+      return clean1 === clean2;
+    }
+
+    // Lifecycle
+    window.addEventListener('DOMContentLoaded', () => {
+      loadLocalState();
+      ensureDefaultUsers();
+      initLiveDriveSync();
+
+      const savedUser = sessionStorage.getItem('dattakrupa_current_user_v5');
+      if (savedUser) {
+        currentUser = JSON.parse(savedUser);
+        const fresh = db.users.find(u => u.username.toLowerCase() === currentUser.username.toLowerCase());
+        if (fresh && fresh.active) {
+          currentUser = fresh;
+          applyUserSessionUI();
+        } else {
+          handleLogout();
+        }
+      } else {
+        document.getElementById('loginScreen').classList.remove('hidden');
+      }
+
+      autoSyncTimer = setInterval(triggerAutomaticSync, 30000);
+      window.addEventListener('online', triggerAutomaticSync);
+    });
+
+    function ensureDefaultUsers() {
+      if (!Array.isArray(db.users)) db.users = [];
+      if (!db.users.some(u => u.username.toLowerCase() === 'admin')) {
+        db.users.push({ username: "admin", name: "Society Admin", role: "admin", password: "1234", active: true, flatId: "" });
+      }
+      db.flats.forEach(f => {
+        if (!db.users.some(u => u.username.toLowerCase() === f.id.toLowerCase())) {
+          db.users.push({ username: f.id, name: f.owner, role: "flat_owner", password: "1234", active: true, flatId: f.id });
+        }
+      });
+      saveLocalState();
+    }
+
+    function loadLocalState() {
+      const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
+      if (stored) {
+        try { db = JSON.parse(stored); } catch (e) { console.error(e); }
+      }
+    }
+
+    function saveLocalState() {
+      db.lastUpdated = new Date().toISOString();
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(db));
+    }
+
+    async function initLiveDriveSync() {
+      updateSyncUI("syncing", "Syncing Drive...");
+      try {
+        const response = await fetch(GAS_URL, { method: "GET" });
+        if (response.ok) {
+          const cloudData = await response.json();
+          if (cloudData && Array.isArray(cloudData.flats) && Array.isArray(cloudData.bills)) {
+            db = cloudData;
+            ensureDefaultUsers();
+            saveLocalState();
+            refreshAllViews();
+            updateSyncUI("synced", "Drive Synced");
+            return;
+          }
+        }
+        updateSyncUI("synced", "Drive Ready");
+      } catch (err) {
+        updateSyncUI("synced", "Cached Data");
+      }
+    }
+
+    async function triggerAutomaticSync() {
+      try {
+        updateSyncUI("syncing", "Auto-saving...");
+        const response = await fetch(GAS_URL, {
+          method: "POST",
+          body: JSON.stringify(db),
+          headers: { "Content-Type": "text/plain;charset=utf-8" }
+        });
+        if (response.ok) updateSyncUI("synced", "Drive Synced");
+        else updateSyncUI("synced", "Connected");
+      } catch (err) {
+        updateSyncUI("synced", "Connected");
+      }
+    }
+
+    async function triggerManualSync() {
+      saveLocalState();
+      updateSyncUI("syncing", "Syncing...");
+      try {
+        const response = await fetch(GAS_URL, {
+          method: "POST",
+          body: JSON.stringify(db),
+          headers: { "Content-Type": "text/plain;charset=utf-8" }
+        });
+        if (response.ok) {
+          updateSyncUI("synced", "Sync Success");
+          showToast("Records saved to Google Drive!");
+        } else {
+          throw new Error();
+        }
+      } catch (e) {
+        updateSyncUI("synced", "Sync Failed");
+        showToast("Sync error. Records saved locally.", "error");
+      }
+    }
+
+    function updateSyncUI(status, label) {
+      const badge = document.getElementById('syncBadge');
+      const text = document.getElementById('syncText');
+      if (text) text.innerText = label;
+      if (badge) {
+        badge.className = status === "syncing" 
+          ? "flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200 transition"
+          : "flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 transition";
+      }
+    }
+
+    // Authentication
+    function handleLoginSubmit() {
+      const userInput = document.getElementById('loginUser').value.trim();
+      const passInput = document.getElementById('loginPass').value.trim();
+      const errBox = document.getElementById('loginError');
+      const errMsg = document.getElementById('loginErrorMsg');
+
+      errBox.classList.add('hidden');
+
+      if (!userInput || !passInput) {
+        errMsg.innerText = "Please enter username and password";
+        errBox.classList.remove('hidden');
+        return;
+      }
+
+      const matched = db.users.find(u => 
+        u.username.toLowerCase() === userInput.toLowerCase() ||
+        (u.flatId && u.flatId.toLowerCase() === userInput.toLowerCase())
+      );
+
+      if (!matched) {
+        errMsg.innerText = "User account not found";
+        errBox.classList.remove('hidden');
+        return;
+      }
+
+      if (!matched.active) {
+        errMsg.innerText = "Account has been disabled by admin";
+        errBox.classList.remove('hidden');
+        return;
+      }
+
+      if (matched.password !== passInput) {
+        errMsg.innerText = "Incorrect password";
+        errBox.classList.remove('hidden');
+        return;
+      }
+
+      currentUser = matched;
+      sessionStorage.setItem('dattakrupa_current_user_v5', JSON.stringify(currentUser));
+      document.getElementById('loginScreen').classList.add('hidden');
+      applyUserSessionUI();
+      refreshAllViews();
+    }
+
+    function handleLogout() {
+      sessionStorage.removeItem('dattakrupa_current_user_v5');
+      currentUser = null;
+      document.getElementById('loginUser').value = "";
+      document.getElementById('loginPass').value = "";
+      document.getElementById('loginScreen').classList.remove('hidden');
+    }
+
+    function applyUserSessionUI() {
+      if (!currentUser) return;
+      const isAdmin = currentUser.role === "admin";
+      const isCommittee = currentUser.role === "committee";
+
+      document.getElementById('userBannerName').innerText = `${currentUser.name} (${currentUser.username})`;
+      const badge = document.getElementById('userBannerRoleBadge');
+      if (isAdmin) {
+        badge.innerText = "Admin (अ‍ॅडमिन)";
+        badge.className = "text-[10px] font-semibold px-2 py-0.5 rounded-full border bg-rose-50 text-rose-700 border-rose-200";
+        document.getElementById('userBannerSub').innerText = "Full Society Administration Access";
+      } else if (isCommittee) {
+        badge.innerText = "Committee (कमिटी)";
+        badge.className = "text-[10px] font-semibold px-2 py-0.5 rounded-full border bg-amber-50 text-amber-700 border-amber-200";
+        document.getElementById('userBannerSub').innerText = `Managing Committee • Flat ${currentUser.flatId || '-'}`;
+      } else {
+        badge.innerText = "Flat Owner (फ्लॅट मालक)";
+        badge.className = "text-[10px] font-semibold px-2 py-0.5 rounded-full border bg-emerald-50 text-emerald-700 border-emerald-200";
+        document.getElementById('userBannerSub').innerText = `Flat ${currentUser.flatId || '-'}`;
+      }
+
+      document.getElementById('adminAddBillBtn').style.display = isAdmin ? 'flex' : 'none';
+      document.getElementById('adminBulkCollectBtn').style.display = isAdmin ? 'flex' : 'none';
+      document.getElementById('adminAddExpBtn').style.display = isAdmin ? 'flex' : 'none';
+      document.getElementById('adminAddFlatBtn').style.display = isAdmin ? 'flex' : 'none';
+
+      document.getElementById('tabBtnUsers').style.display = isAdmin ? 'flex' : 'none';
+      document.getElementById('tabBtnSettings').style.display = isAdmin ? 'flex' : 'none';
+
+      switchTab('Dashboard');
+    }
+
+    function switchTab(tab) {
+      if ((tab === 'Users' || tab === 'Settings') && currentUser?.role !== 'admin') {
+        tab = 'Dashboard';
+      }
+
+      ['Dashboard', 'Bills', 'Expenses', 'Members', 'Users', 'Settings'].forEach(t => {
+        const view = document.getElementById(`view${t}`);
+        const btn = document.getElementById(`tabBtn${t}`);
+        if (view) view.classList.toggle('hidden', t !== tab);
+        if (btn) {
+          btn.className = (t === tab)
+            ? "flex-col items-center text-indigo-600 py-1 px-2 flex"
+            : "flex-col items-center text-slate-400 py-1 px-2 flex";
+        }
+      });
+      refreshAllViews();
+    }
+
+    function refreshAllViews() {
+      renderDashboard();
+      renderBills();
+      renderExpenses();
+      renderFlats();
+      if (currentUser?.role === 'admin') renderUsersList();
+    }
+
+    // Dashboard Rendering
+    function renderDashboard() {
+      const allBills = db.bills;
+      const activeMonth = getActiveBillingMonth();
+
+      const totalColl = allBills.filter(b => b.status === "Paid").reduce((sum, b) => sum + Number(b.amount || 0), 0);
+      const totalPend = allBills.filter(b => b.status === "Pending").reduce((sum, b) => sum + Number(b.amount || 0), 0);
+      const totalExp = db.expenses.reduce((sum, e) => sum + Number(e.amount || 0), 0);
+      const societyBalance = totalColl - totalExp;
+
+      const monthBills = allBills.filter(b => isBillOfCurrentMonth(b));
+      const monthColl = monthBills.filter(b => b.status === "Paid").reduce((sum, b) => sum + Number(b.amount || 0), 0);
+      const monthPend = monthBills.filter(b => b.status === "Pending").reduce((sum, b) => sum + Number(b.amount || 0), 0);
+
+      const collEl = document.getElementById('dashCollected');
+      const pendEl = document.getElementById('dashPending');
+      const expEl = document.getElementById('dashExpenses');
+      const balEl = document.getElementById('dashBalance');
+      const monthCollSub = document.getElementById('dashMonthCollectedSub');
+      const monthPendSub = document.getElementById('dashMonthPendingSub');
+
+      if (collEl) collEl.innerText = `₹${totalColl.toLocaleString('en-IN')}`;
+      if (pendEl) pendEl.innerText = `₹${totalPend.toLocaleString('en-IN')}`;
+      if (expEl) expEl.innerText = `₹${totalExp.toLocaleString('en-IN')}`;
+      if (balEl) balEl.innerText = `₹${societyBalance.toLocaleString('en-IN')}`;
+      if (monthCollSub) monthCollSub.innerText = `${activeMonth}: ₹${monthColl.toLocaleString('en-IN')}`;
+      if (monthPendSub) monthPendSub.innerText = `${activeMonth}: ₹${monthPend.toLocaleString('en-IN')}`;
+
+      renderRecentCollectionsList();
+    }
+
+    function switchRecentCollectionTab(tabKey) {
+      activeRecentCollectionTab = tabKey;
+      const isMonth = tabKey === 'thisMonth';
+      
+      const btnMonth = document.getElementById('tabBtnRecentMonth');
+      const btnAll = document.getElementById('tabBtnRecentAll');
+      if (btnMonth && btnAll) {
+        btnMonth.className = isMonth 
+          ? "flex-1 py-1 rounded-lg bg-white text-indigo-700 shadow-sm transition flex items-center justify-center gap-1 text-[11px]"
+          : "flex-1 py-1 rounded-lg text-slate-500 hover:text-slate-800 transition flex items-center justify-center gap-1 text-[11px]";
+        btnAll.className = !isMonth 
+          ? "flex-1 py-1 rounded-lg bg-white text-indigo-700 shadow-sm transition flex items-center justify-center gap-1 text-[11px]"
+          : "flex-1 py-1 rounded-lg text-slate-500 hover:text-slate-800 transition flex items-center justify-center gap-1 text-[11px]";
+      }
+      renderRecentCollectionsList();
+    }
+
+    function renderRecentCollectionsList() {
+      const isMonth = activeRecentCollectionTab === 'thisMonth';
+      const allBills = db.bills;
+      const activeMonth = getActiveBillingMonth();
+
+      // Build synthesized active-month bill list ensuring every flat has representation if checking current month
+      let targetDisplayItems = [];
+
+      if (isMonth) {
+        // Collect existing bills for the active month
+        const monthBills = allBills.filter(b => isBillOfCurrentMonth(b));
+
+        // Ensure every flat is accounted for in this month's status
+        db.flats.forEach(f => {
+          const flatMonthBill = monthBills.find(b => isFlatMatch(b.flatId, f.id));
+          if (flatMonthBill) {
+            targetDisplayItems.push(flatMonthBill);
+          } else {
+            // Flat has no bill created for this month yet -> treat as pending due
+            targetDisplayItems.push({
+              id: `AUTO-DUE-${f.id}`,
+              flatId: f.id,
+              month: activeMonth,
+              amount: Number(f.maintenance || 2000),
+              status: "Pending",
+              paidOn: "-",
+              receiptNo: "-"
+            });
+          }
+        });
+      } else {
+        // All-Time view: show all recorded bills
+        targetDisplayItems = [...allBills];
+      }
+
+      const targetPaidBills = targetDisplayItems.filter(b => b.status === "Paid");
+      const targetPendingBills = targetDisplayItems.filter(b => b.status === "Pending");
+
+      const targetCollSum = targetPaidBills.reduce((s, b) => s + Number(b.amount || 0), 0);
+      const targetPendSum = targetPendingBills.reduce((s, b) => s + Number(b.amount || 0), 0);
+
+      const countMonthEl = document.getElementById('badgeCountThisMonth');
+      const countAllEl = document.getElementById('badgeCountAllTime');
+      if (countMonthEl) countMonthEl.innerText = db.flats.length;
+      if (countAllEl) countAllEl.innerText = allBills.length;
+
+      const ribbonCollLabel = document.getElementById('recentCollectionRibbonLabel');
+      const ribbonCollAmt = document.getElementById('recentCollectionRibbonAmount');
+      const ribbonPendLabel = document.getElementById('recentPendingRibbonLabel');
+      const ribbonPendAmt = document.getElementById('recentPendingRibbonAmount');
+      const subText = document.getElementById('recentCollectionsSubText');
+
+      if (ribbonCollLabel) ribbonCollLabel.innerText = isMonth ? `${activeMonth} Collected:` : "All-Time Collected:";
+      if (ribbonCollAmt) ribbonCollAmt.innerText = `₹${targetCollSum.toLocaleString('en-IN')}`;
+      if (ribbonPendLabel) ribbonPendLabel.innerText = isMonth ? `${activeMonth} Pending:` : "Total Pending:";
+      if (ribbonPendAmt) ribbonPendAmt.innerText = `₹${targetPendSum.toLocaleString('en-IN')}`;
+      if (subText) subText.innerText = `${targetPaidBills.length} paid • ${targetPendingBills.length} pending`;
+
+      const listContainer = document.getElementById('recentBillsList');
+      if (!listContainer) return;
+
+      if (targetDisplayItems.length === 0) {
+        listContainer.innerHTML = `<p class="text-[11px] text-slate-400 text-center py-3">No bills recorded for ${isMonth ? activeMonth : 'all time'}</p>`;
+        return;
+      }
+
+      const isAdmin = currentUser?.role === 'admin';
+
+      // Sort pending items to the top for quick visibility and action
+      const sortedBills = [...targetDisplayItems].sort((a, b) => {
+        if (a.status === 'Pending' && b.status !== 'Pending') return -1;
+        if (a.status !== 'Pending' && b.status === 'Pending') return 1;
+        return 0;
+      });
+
+      listContainer.innerHTML = sortedBills.map(b => {
+        const flatObj = db.flats.find(f => isFlatMatch(f.id, b.flatId));
+        const owner = flatObj ? flatObj.owner : `Resident`;
+        const cleanFlatId = b.flatId.replace(/^[A-Za-z]-/, '');
+        const isPaid = b.status === "Paid";
+
+        return `
+          <div class="flex items-center justify-between p-3 rounded-2xl bg-white border ${isPaid ? 'border-slate-100' : 'border-rose-200 bg-rose-50/30'} shadow-sm hover:shadow transition">
+            <div class="flex items-center gap-3">
+              <span class="w-10 h-10 rounded-xl ${isPaid ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'} font-black flex items-center justify-center text-xs">
+                ${cleanFlatId}
+              </span>
+              <div>
+                <p class="font-bold text-slate-800 text-xs">
+                  ${cleanFlatId} <span class="font-normal text-slate-600">(${owner})</span>
+                  ${!isPaid ? '<span class="ml-1 px-1.5 py-0.5 rounded text-[9px] font-bold bg-rose-100 text-rose-700">Pending Due</span>' : ''}
+                </p>
+                <p class="text-[10px] text-slate-400">
+                  ${b.month} • ${isPaid ? 'Paid on: ' + (b.paidOn || '-') : '<span class="text-rose-600 font-semibold">Payment Awaited</span>'}
+                </p>
+              </div>
+            </div>
+            <div class="text-right flex flex-col items-end gap-0.5">
+              <p class="font-black ${isPaid ? 'text-emerald-700' : 'text-rose-700'} text-xs">
+                ${isPaid ? '₹' + Number(b.amount).toLocaleString('en-IN') : 'Due: ₹' + Number(b.amount).toLocaleString('en-IN')}
+              </p>
+              <div class="flex items-center gap-1.5">
+                ${isPaid ? `
+                  <button onclick="openReceiptModal('${b.id}')" class="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 underline">Receipt</button>
+                ` : `
+                  ${isAdmin ? `
+                    <button onclick="quickPayPendingBill('${b.id}', '${b.flatId}', '${b.month}', ${b.amount})" class="text-[9px] bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-2 py-0.5 rounded-md shadow-xs">Mark Paid</button>
+                  ` : `
+                    <span class="text-[9px] text-rose-600 font-semibold">Unpaid</span>
+                  `}
+                `}
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function quickPayPendingBill(billId, flatId, month, amount) {
+      if (currentUser?.role !== 'admin') {
+        showToast("Only Admin can mark bills as paid", "error");
+        return;
+      }
+
+      // Check if this was an auto-synthesized pending entry or an existing bill
+      let existingBill = db.bills.find(b => b.id === billId);
+      if (!existingBill) {
+        existingBill = {
+          id: "BILL-" + Math.floor(10000 + Math.random() * 90000),
+          flatId: flatId,
+          month: month,
+          amount: Number(amount),
+          status: "Paid",
+          paidOn: new Date().toISOString().split('T')[0],
+          receiptNo: "REC-" + Math.floor(1000 + Math.random() * 9000)
+        };
+        db.bills.push(existingBill);
+      } else {
+        existingBill.status = "Paid";
+        existingBill.paidOn = new Date().toISOString().split('T')[0];
+        existingBill.receiptNo = "REC-" + Math.floor(1000 + Math.random() * 9000);
+      }
+
+      saveLocalState();
+      refreshAllViews();
+      triggerAutomaticSync();
+      showToast(`Payment collected for flat ${flatId}!`);
+    }
+
+    // Modal Helpers
+    function openModal(id) { 
+      const el = document.getElementById(id);
+      if (el) el.classList.remove('hidden'); 
+    }
+    function closeModal(id) { 
+      const el = document.getElementById(id);
+      if (el) el.classList.add('hidden'); 
+    }
+
+    // Collections Modal
+    function openAllCollectionsModal() {
+      activeModalCollectionTab = 'thisMonth';
+      const searchBox = document.getElementById('allCollModalSearch');
+      if (searchBox) searchBox.value = '';
+      updateModalTabStyles();
+      populateAllCollectionsModalList();
+      openModal('modalAllCollections');
+    }
+
+    function switchModalCollectionTab(tabKey) {
+      activeModalCollectionTab = tabKey;
+      updateModalTabStyles();
+      populateAllCollectionsModalList();
+    }
+
+    function updateModalTabStyles() {
+      const isMonth = activeModalCollectionTab === 'thisMonth';
+      const btnMonth = document.getElementById('modalTabBtnMonth');
+      const btnAll = document.getElementById('modalTabBtnAll');
+      if (btnMonth && btnAll) {
+        btnMonth.className = isMonth 
+          ? "flex-1 py-1.5 rounded-lg bg-white text-indigo-700 shadow-sm transition text-[11px]"
+          : "flex-1 py-1.5 rounded-lg text-slate-500 hover:text-slate-800 transition text-[11px]";
+        btnAll.className = !isMonth 
+          ? "flex-1 py-1.5 rounded-lg bg-white text-indigo-700 shadow-sm transition text-[11px]"
+          : "flex-1 py-1.5 rounded-lg text-slate-500 hover:text-slate-800 transition text-[11px]";
+      }
+    }
+
+    function populateAllCollectionsModalList() {
+      const isMonth = activeModalCollectionTab === 'thisMonth';
+      const activeMonth = getActiveBillingMonth();
+      let allDisplayItems = [];
+
+      if (isMonth) {
+        // Collect bills specifically belonging to active billing month
+        const monthBills = db.bills.filter(b => isBillOfCurrentMonth(b));
+        // Account for every flat in the active month
+        db.flats.forEach(f => {
+          const flatBill = monthBills.find(b => isFlatMatch(b.flatId, f.id));
+          if (flatBill) {
+            allDisplayItems.push(flatBill);
+          } else {
+            // Flat has no bill yet for this month -> show as pending due
+            allDisplayItems.push({
+              id: `AUTO-${f.id}`,
+              flatId: f.id,
+              month: activeMonth,
+              amount: Number(f.maintenance || 2000),
+              status: "Pending",
+              paidOn: "-",
+              receiptNo: "-"
+            });
+          }
+        });
+      } else {
+        // All-Time view: show all bills (both Paid and Pending)
+        allDisplayItems = [...db.bills];
+      }
+
+      const searchTerm = (document.getElementById('allCollModalSearch')?.value || "").trim().toLowerCase();
+      if (searchTerm) {
+        allDisplayItems = allDisplayItems.filter(b => {
+          const flatObj = db.flats.find(f => isFlatMatch(f.id, b.flatId));
+          const owner = flatObj ? flatObj.owner.toLowerCase() : "";
+          return b.flatId.toLowerCase().includes(searchTerm) || owner.includes(searchTerm) || (b.month || '').toLowerCase().includes(searchTerm);
+        });
+      }
+
+      const totalPaidAmt = allDisplayItems
+        .filter(b => b.status === "Paid")
+        .reduce((sum, b) => sum + Number(b.amount || 0), 0);
+
+      const totalPendingAmt = allDisplayItems
+        .filter(b => b.status === "Pending")
+        .reduce((sum, b) => sum + Number(b.amount || 0), 0);
+
+      const labelEl = document.getElementById('allCollModalLabel');
+      const totalEl = document.getElementById('allCollModalGrandTotal');
+      const pendEl = document.getElementById('allCollModalGrandPending');
+      const countEl = document.getElementById('allCollModalCount');
+
+      if (labelEl) labelEl.innerText = isMonth ? "Month Collections:" : "All-Time Collections:";
+      if (totalEl) totalEl.innerText = `₹${totalPaidAmt.toLocaleString('en-IN')}`;
+      if (pendEl) pendEl.innerText = `₹${totalPendingAmt.toLocaleString('en-IN')}`;
+      if (countEl) countEl.innerText = `${allDisplayItems.length} records (${allDisplayItems.filter(b => b.status === "Paid").length} paid, ${allDisplayItems.filter(b => b.status === "Pending").length} due)`;
+
+      const listContainer = document.getElementById('allCollectionsListContainer');
+      if (!listContainer) return;
+
+      if (allDisplayItems.length === 0) {
+        listContainer.innerHTML = `<p class="text-xs text-slate-400 text-center py-6">No records found for ${isMonth ? activeMonth : 'all time'}.</p>`;
+        return;
+      }
+
+      // Sort pending dues to the top
+      const sortedItems = [...allDisplayItems].sort((a, b) => {
+        if (a.status === 'Pending' && b.status !== 'Pending') return -1;
+        if (a.status !== 'Pending' && b.status === 'Pending') return 1;
+        return 0;
+      });
+
+      listContainer.innerHTML = sortedItems.map(b => {
+        const flatObj = db.flats.find(f => isFlatMatch(f.id, b.flatId));
+        const owner = flatObj ? flatObj.owner : `Resident`;
+        const cleanFlatId = b.flatId.replace(/^[A-Za-z]-/, '');
+        const isPaid = b.status === "Paid";
+
+        return `
+          <div class="p-2.5 rounded-2xl ${isPaid ? 'bg-slate-50 border border-slate-200' : 'bg-rose-50/50 border border-rose-200'} flex items-center justify-between text-xs">
+            <div class="flex items-center gap-2.5">
+              <div class="w-9 h-9 rounded-xl ${isPaid ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'} font-bold flex items-center justify-center text-xs">
+                ${cleanFlatId}
+              </div>
+              <div>
+                <h4 class="font-bold text-slate-800">
+                  ${cleanFlatId} (${owner})
+                  ${!isPaid ? '<span class="ml-1 px-1.5 py-0.2 rounded text-[9px] font-bold bg-rose-100 text-rose-700">Pending</span>' : ''}
+                </h4>
+                <p class="text-[10px] text-slate-500">
+                  ${b.month} • ${isPaid ? 'Paid: ' + (b.paidOn || '-') + ' • Rec: ' + (b.receiptNo || '-') : '<span class="text-rose-600 font-semibold">Payment Awaited</span>'}
+                </p>
+              </div>
+            </div>
+            <div class="text-right">
+              <strong class="font-black ${isPaid ? 'text-emerald-700' : 'text-rose-700'} text-xs block">
+                ${isPaid ? '₹' + Number(b.amount).toLocaleString('en-IN') : 'Due: ₹' + Number(b.amount).toLocaleString('en-IN')}
+              </strong>
+              ${isPaid ? `
+                <button onclick="openReceiptModal('${b.id}')" class="text-[9px] font-bold text-indigo-600 hover:text-indigo-800 underline">Receipt</button>
+              ` : `
+                <span class="text-[9px] font-semibold text-rose-600">Unpaid</span>
+              `}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function exportCollectionsPDF() {
+      const isMonth = activeModalCollectionTab === 'thisMonth';
+      const activeMonth = getActiveBillingMonth();
+      let allDisplayItems = [];
+
+      if (isMonth) {
+        const monthBills = db.bills.filter(b => isBillOfCurrentMonth(b));
+        db.flats.forEach(f => {
+          const flatBill = monthBills.find(b => isFlatMatch(b.flatId, f.id));
+          if (flatBill) {
+            allDisplayItems.push(flatBill);
+          } else {
+            allDisplayItems.push({
+              id: `AUTO-${f.id}`,
+              flatId: f.id,
+              month: activeMonth,
+              amount: Number(f.maintenance || 2000),
+              status: "Pending",
+              paidOn: "-",
+              receiptNo: "-"
+            });
+          }
+        });
+      } else {
+        allDisplayItems = [...db.bills];
+      }
+
+      const searchTerm = (document.getElementById('allCollModalSearch')?.value || "").trim().toLowerCase();
+      if (searchTerm) {
+        allDisplayItems = allDisplayItems.filter(b => {
+          const flatObj = db.flats.find(f => isFlatMatch(f.id, b.flatId));
+          const owner = flatObj ? flatObj.owner.toLowerCase() : "";
+          return b.flatId.toLowerCase().includes(searchTerm) || owner.includes(searchTerm) || (b.month || '').toLowerCase().includes(searchTerm);
+        });
+      }
+
+      if (allDisplayItems.length === 0) {
+        showToast("No records available to export.", "error");
+        return;
+      }
+
+      const sortedItems = [...allDisplayItems].sort((a, b) => {
+        if (a.status === 'Pending' && b.status !== 'Pending') return -1;
+        if (a.status !== 'Pending' && b.status === 'Pending') return 1;
+        return 0;
+      });
+
+      const totalPaid = sortedItems.filter(b => b.status === "Paid").reduce((s, b) => s + Number(b.amount || 0), 0);
+      const totalPending = sortedItems.filter(b => b.status === "Pending").reduce((s, b) => s + Number(b.amount || 0), 0);
+
+      // Use a visible container in the DOM so html2canvas renders completely
+      const exportModal = document.getElementById('collectionsPdfExportModal');
+      const exportContent = document.getElementById('collectionsPdfContent');
+
+      exportContent.innerHTML = `
+        <div style="font-family: Arial, Helvetica, sans-serif; color: #1e293b; line-height: 1.3; width: 100%; max-width: 760px; margin: 0 auto; padding: 10px;">
+          <div style="text-align: center; border-bottom: 2px solid #334155; padding-bottom: 8px; margin-bottom: 10px;">
+            <h2 style="margin: 0; font-size: 20px; font-weight: 800; color: #0f172a;">DattaKrupa Society</h2>
+            <p style="margin: 2px 0 0; font-size: 13px; font-weight: 700; color: #4338ca;">दत्तकृपा सोसायटी</p>
+            <h3 style="margin: 4px 0 0; font-size: 13px; font-weight: 700; color: #1e293b;">Collections & Dues Ledger (${isMonth ? activeMonth : 'All Time'})</h3>
+            <p style="margin: 3px 0 0; font-size: 10px; color: #64748b;">Date: ${new Date().toLocaleDateString('en-IN')} • Total Records: ${sortedItems.length}</p>
+          </div>
+
+          <table style="width: 100%; margin-bottom: 10px; border-collapse: separate; border-spacing: 6px;">
+            <tr>
+              <td style="width: 50%; padding: 8px 12px; background-color: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 8px;">
+                <span style="font-size: 10px; font-weight: bold; color: #065f46; display: block; text-transform: uppercase;">Total Collected</span>
+                <span style="font-size: 16px; font-weight: 900; color: #047857;">₹${totalPaid.toLocaleString('en-IN')}</span>
+              </td>
+              <td style="width: 50%; padding: 8px 12px; background-color: #fff1f2; border: 1px solid #fecdd3; border-radius: 8px; text-align: right;">
+                <span style="font-size: 10px; font-weight: bold; color: #9f1239; display: block; text-transform: uppercase;">Total Pending Dues</span>
+                <span style="font-size: 16px; font-weight: 900; color: #be123c;">₹${totalPending.toLocaleString('en-IN')}</span>
+              </td>
+            </tr>
+          </table>
+
+          <table style="width: 100%; border-collapse: collapse; font-size: 10px; text-align: left;">
+            <thead>
+              <tr style="background-color: #f1f5f9; border-top: 1px solid #cbd5e1; border-bottom: 2px solid #94a3b8;">
+                <th style="padding: 6px 5px; font-weight: bold; color: #0f172a; width: 10%;">Flat</th>
+                <th style="padding: 6px 5px; font-weight: bold; color: #0f172a; width: 26%;">Owner / Resident</th>
+                <th style="padding: 6px 5px; font-weight: bold; color: #0f172a; width: 20%;">Month</th>
+                <th style="padding: 6px 5px; font-weight: bold; color: #0f172a; width: 14%;">Amount</th>
+                <th style="padding: 6px 5px; font-weight: bold; color: #0f172a; width: 12%;">Status</th>
+                <th style="padding: 6px 5px; font-weight: bold; color: #0f172a; width: 18%;">Receipt No</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${sortedItems.map((b, idx) => {
+                const flatObj = db.flats.find(f => isFlatMatch(f.id, b.flatId));
+                const owner = flatObj ? flatObj.owner : "-";
+                const isPaid = b.status === "Paid";
+                const cleanFlatId = b.flatId.replace(/^[A-Za-z]-/, '');
+                const bg = !isPaid ? '#ffe4e6' : (idx % 2 === 0 ? '#ffffff' : '#f8fafc');
+                return `
+                  <tr style="background-color: ${bg}; border-bottom: 1px solid #e2e8f0; page-break-inside: avoid; break-inside: avoid;">
+                    <td style="padding: 5px; font-weight: bold; color: #0f172a;">${cleanFlatId}</td>
+                    <td style="padding: 5px; color: #1e293b;">${owner}</td>
+                    <td style="padding: 5px; color: #475569;">${b.month}</td>
+                    <td style="padding: 5px; font-weight: bold; color: ${isPaid ? '#047857' : '#be123c'};">₹${Number(b.amount).toLocaleString('en-IN')}</td>
+                    <td style="padding: 5px; font-weight: bold; color: ${isPaid ? '#047857' : '#be123c'};">${isPaid ? 'Paid' : 'Pending'}</td>
+                    <td style="padding: 5px; color: #64748b; font-family: monospace;">${isPaid ? (b.receiptNo || '-') : 'Unpaid'}</td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+
+          <div style="margin-top: 14px; padding-top: 8px; border-top: 1px solid #cbd5e1; text-align: center; font-size: 9px; color: #64748b;">
+            DattaKrupa Society • Automated Maintenance Ledger Report • Page 1
+          </div>
+        </div>
+      `;
+
+      // Display the container so html2canvas has real bounding dimensions
+      exportModal.classList.remove('hidden');
+      showToast("Generating PDF...", "success");
+
+      setTimeout(() => {
+        const opt = {
+          margin: [5, 5, 5, 5],
+          filename: `DattaKrupa_Ledger_${isMonth ? 'ThisMonth' : 'AllTime'}_${Date.now()}.pdf`,
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: { scale: 2, useCORS: true, logging: false, scrollY: 0 },
+          pagebreak: { mode: ['avoid-all', 'css', 'legacy'] },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+
+        html2pdf().set(opt).from(exportContent).save().then(() => {
+          exportModal.classList.add('hidden');
+        }).catch(err => {
+          console.error("PDF generation failed:", err);
+          exportModal.classList.add('hidden');
+          showToast("PDF download failed, printing instead...", "error");
+          printCollectionsDirect();
+        });
+      }, 250);
+    }
+
+    function printCollectionsDirect() {
+      const isMonth = activeModalCollectionTab === 'thisMonth';
+      const activeMonth = getActiveBillingMonth();
+      let allDisplayItems = [];
+
+      if (isMonth) {
+        const monthBills = db.bills.filter(b => isBillOfCurrentMonth(b));
+        db.flats.forEach(f => {
+          const flatBill = monthBills.find(b => isFlatMatch(b.flatId, f.id));
+          if (flatBill) {
+            allDisplayItems.push(flatBill);
+          } else {
+            allDisplayItems.push({
+              id: `AUTO-${f.id}`,
+              flatId: f.id,
+              month: activeMonth,
+              amount: Number(f.maintenance || 2000),
+              status: "Pending",
+              paidOn: "-",
+              receiptNo: "-"
+            });
+          }
+        });
+      } else {
+        allDisplayItems = [...db.bills];
+      }
+
+      const sortedItems = [...allDisplayItems].sort((a, b) => {
+        if (a.status === 'Pending' && b.status !== 'Pending') return -1;
+        if (a.status !== 'Pending' && b.status === 'Pending') return 1;
+        return 0;
+      });
+
+      const totalPaid = sortedItems.filter(b => b.status === "Paid").reduce((s, b) => s + Number(b.amount || 0), 0);
+      const totalPending = sortedItems.filter(b => b.status === "Pending").reduce((s, b) => s + Number(b.amount || 0), 0);
+
+      const html = `
+        <div style="text-align: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 12px; margin-bottom: 16px;">
+          <h2 style="margin: 0; font-size: 20px; font-weight: 800; color: #0f172a;">DattaKrupa Society</h2>
+          <p style="margin: 2px 0 0 0; font-size: 13px; font-weight: 600; color: #4f46e5;">दत्तकृपा सोसायटी</p>
+          <h4 style="margin: 6px 0 0 0; font-size: 13px; font-weight: 700; color: #334155;">Collections & Dues Ledger (${isMonth ? activeMonth : 'All Time'})</h4>
+          <p style="margin: 3px 0 0 0; font-size: 10px; color: #64748b;">Generated on: ${new Date().toLocaleDateString('en-IN')} • Total Records: ${sortedItems.length}</p>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; gap: 16px; margin-bottom: 16px;">
+          <div style="flex: 1; padding: 10px 14px; background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 12px;">
+            <span style="color: #065f46; font-weight: 700; font-size: 10px; display: block; text-transform: uppercase;">Total Collected</span>
+            <strong style="color: #047857; font-size: 16px; font-weight: 900; display: block; margin-top: 2px;">₹${totalPaid.toLocaleString('en-IN')}</strong>
+          </div>
+          <div style="flex: 1; padding: 10px 14px; background: #fff1f2; border: 1px solid #fecdd3; border-radius: 12px; text-align: right;">
+            <span style="color: #9f1239; font-weight: 700; font-size: 10px; display: block; text-transform: uppercase;">Total Pending Dues</span>
+            <strong style="color: #be123c; font-size: 16px; font-weight: 900; display: block; margin-top: 2px;">₹${totalPending.toLocaleString('en-IN')}</strong>
+          </div>
+        </div>
+
+        <table style="width: 100%; border-collapse: collapse; font-size: 11px; text-align: left;">
+          <thead>
+            <tr style="background: #f8fafc; border-bottom: 2px solid #cbd5e1;">
+              <th style="padding: 9px 8px; font-weight: 700; color: #334155;">Flat</th>
+              <th style="padding: 9px 8px; font-weight: 700; color: #334155;">Owner / Resident</th>
+              <th style="padding: 9px 8px; font-weight: 700; color: #334155;">Month</th>
+              <th style="padding: 9px 8px; font-weight: 700; color: #334155;">Amount</th>
+              <th style="padding: 9px 8px; font-weight: 700; color: #334155;">Status</th>
+              <th style="padding: 9px 8px; font-weight: 700; color: #334155;">Paid Date</th>
+              <th style="padding: 9px 8px; font-weight: 700; color: #334155;">Receipt No</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${sortedItems.map((b, idx) => {
+              const flatObj = db.flats.find(f => isFlatMatch(f.id, b.flatId));
+              const owner = flatObj ? flatObj.owner : "-";
+              const isPaid = b.status === "Paid";
+              const cleanFlatId = b.flatId.replace(/^[A-Za-z]-/, '');
+              const rowBg = !isPaid ? '#fff1f2' : (idx % 2 === 0 ? '#ffffff' : '#f8fafc');
+              return `
+                <tr style="border-bottom: 1px solid #e2e8f0; background: ${rowBg};">
+                  <td style="padding: 8px; font-weight: 800; color: #0f172a;">${cleanFlatId}</td>
+                  <td style="padding: 8px; color: #334155; font-weight: 600;">${owner}</td>
+                  <td style="padding: 8px; color: #64748b;">${b.month}</td>
+                  <td style="padding: 8px; font-weight: 800; color: ${isPaid ? '#047857' : '#be123c'};">₹${Number(b.amount).toLocaleString('en-IN')}</td>
+                  <td style="padding: 8px; font-weight: 700; color: ${isPaid ? '#047857' : '#be123c'};">${isPaid ? 'Paid' : 'Pending'}</td>
+                  <td style="padding: 8px; color: #475569;">${b.paidOn || '-'}</td>
+                  <td style="padding: 8px; color: #475569; font-family: monospace;">${b.receiptNo || '-'}</td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+      `;
+
+      printCleanContent("DattaKrupa Society - Collections & Dues Ledger", html);
+    }
+
+    function exportCollectionsCSV() {
+      const isMonth = activeModalCollectionTab === 'thisMonth';
+      const activeMonth = getActiveBillingMonth();
+      let targetBills = isMonth 
+        ? db.bills.filter(b => isBillOfCurrentMonth(b))
+        : [...db.bills];
+
+      const searchTerm = (document.getElementById('allCollModalSearch')?.value || "").trim().toLowerCase();
+      if (searchTerm) {
+        targetBills = targetBills.filter(b => {
+          const flatObj = db.flats.find(f => isFlatMatch(f.id, b.flatId));
+          const owner = flatObj ? flatObj.owner.toLowerCase() : "";
+          return b.flatId.toLowerCase().includes(searchTerm) || owner.includes(searchTerm);
+        });
+      }
+
+      if (targetBills.length === 0) {
+        alert("No collections available to export.");
+        return;
+      }
+
+      const csvRows = [["Flat Number", "Owner Name", "Month", "Amount", "Status", "Paid Date", "Receipt No"]];
+      targetBills.forEach(b => {
+        const flatObj = db.flats.find(f => isFlatMatch(f.id, b.flatId));
+        const owner = flatObj ? flatObj.owner : "-";
+        csvRows.push([b.flatId, `"${owner}"`, `"${b.month}"`, b.amount, b.status, b.paidOn, b.receiptNo]);
+      });
+
+      const totalPaidAmt = targetBills.filter(b => b.status === "Paid").reduce((s, b) => s + Number(b.amount || 0), 0);
+      const totalPendAmt = targetBills.filter(b => b.status === "Pending").reduce((s, b) => s + Number(b.amount || 0), 0);
+      csvRows.push(["TOTAL PAID", "-", "-", totalPaidAmt, "PAID", "-", "-"]);
+      csvRows.push(["TOTAL PENDING", "-", "-", totalPendAmt, "PENDING", "-", "-"]);
+
+      const csvContent = "data:text/csv;charset=utf-8," + csvRows.map(e => e.join(",")).join("\n");
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", `DattaKrupa_Collections_${isMonth ? 'Month' : 'AllTime'}_${Date.now()}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    // Bills View
+    function renderBills() {
+      const container = document.getElementById('billsContainer');
+      const search = (document.getElementById('billSearchInput')?.value || "").toLowerCase();
+      const isAdmin = currentUser?.role === 'admin';
+
+      let list = db.bills;
+      if (currentUser?.role === 'flat_owner') {
+        list = list.filter(b => b.flatId.toLowerCase() === currentUser.flatId.toLowerCase());
+      }
+
+      if (search) {
+        list = list.filter(b => b.flatId.toLowerCase().includes(search) || b.month.toLowerCase().includes(search));
+      }
+
+      if (list.length === 0) {
+        container.innerHTML = `<div class="text-center py-8 text-xs text-slate-400">No matching bills found</div>`;
+        return;
+      }
+
+      container.innerHTML = list.map(b => `
+        <div class="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl ${b.status === 'Paid' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-rose-50 text-rose-600 border border-rose-100'} flex items-center justify-center text-xs font-bold">
+              ${b.flatId}
+            </div>
+            <div>
+              <div class="flex items-center gap-1.5">
+                <h4 class="text-xs font-bold text-slate-800">${b.month}</h4>
+                <span class="text-[9px] px-1.5 py-0.2 rounded font-bold ${b.status === 'Paid' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">${b.status}</span>
+              </div>
+              <p class="text-[10px] text-slate-400">Rec: ${b.receiptNo || '-'} • Date: ${b.paidOn || '-'}</p>
+            </div>
+          </div>
+          <div class="text-right flex flex-col items-end gap-1">
+            <span class="text-xs font-extrabold text-slate-900">₹${Number(b.amount).toLocaleString('en-IN')}</span>
+            <div class="flex items-center gap-1">
+              ${b.status === 'Paid' ? `
+                <button onclick="openReceiptModal('${b.id}')" class="text-[10px] bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold px-2 py-0.5 rounded-md flex items-center gap-1">
+                  <i class="fa-solid fa-receipt text-[9px]"></i> Receipt
+                </button>
+              ` : ''}
+              ${isAdmin && b.status === 'Pending' ? `
+                <button onclick="markBillPaid('${b.id}')" class="text-[10px] bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-2 py-0.5 rounded-md">Mark Paid</button>
+              ` : ''}
+              ${isAdmin ? `
+                <button onclick="askDeleteBill('${b.id}')" class="text-[10px] bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold px-1.5 py-0.5 rounded-md" title="Delete Bill">
+                  <i class="fa-solid fa-trash text-[9px]"></i>
+                </button>
+              ` : ''}
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function markBillPaid(billId) {
+      if (currentUser?.role !== 'admin') {
+        alert("Only Admin can mark bills as paid");
+        return;
+      }
+      const bill = db.bills.find(b => b.id === billId);
+      if (bill) {
+        bill.status = "Paid";
+        bill.paidOn = new Date().toISOString().split('T')[0];
+        bill.receiptNo = "REC-" + Math.floor(1000 + Math.random() * 9000);
+        saveLocalState();
+        refreshAllViews();
+        triggerAutomaticSync();
+      }
+    }
+
+    function askDeleteBill(billId) {
+      if (currentUser?.role !== 'admin') {
+        showToast("Only Admin can delete bills", "error");
+        return;
+      }
+      openConfirmModal("Delete Bill", "Are you sure you want to permanently delete this bill record?", () => {
+        db.bills = db.bills.filter(b => b.id !== billId);
+        saveLocalState();
+        refreshAllViews();
+        triggerAutomaticSync();
+        showToast("Bill record deleted.");
+      });
+    }
+
+    // Bulk Collect
+    function openBulkCollectModal() {
+      if (currentUser?.role !== 'admin') return;
+      selectedBulkBillIds.clear();
+      document.getElementById('bulkCollectDate').value = new Date().toISOString().split('T')[0];
+      populateBulkMonthOptions();
+      renderBulkCollectList();
+      openModal('modalBulkCollect');
+    }
+
+    function populateBulkMonthOptions() {
+      const monthSelect = document.getElementById('bulkFilterMonth');
+      if (!monthSelect) return;
+      const pendingBills = db.bills.filter(b => b.status === "Pending");
+      const uniqueMonths = Array.from(new Set(pendingBills.map(b => b.month).filter(Boolean)));
+      monthSelect.innerHTML = `<option value="ALL">All Pending Months</option>` + uniqueMonths.map(m => `<option value="${m}">${m}</option>`).join('');
+    }
+
+    function renderBulkCollectList() {
+      const selMonth = document.getElementById('bulkFilterMonth')?.value || "ALL";
+      let pendingBills = db.bills.filter(b => b.status === "Pending");
+
+      if (selMonth !== "ALL") pendingBills = pendingBills.filter(b => b.month === selMonth);
+      document.getElementById('bulkPendingAvailableCount').innerText = `${pendingBills.length} available`;
+
+      const listContainer = document.getElementById('bulkCollectBillsList');
+      if (pendingBills.length === 0) {
+        listContainer.innerHTML = `<p class="text-xs text-slate-400 text-center py-4">No pending bills found for selection.</p>`;
+        updateBulkSummary(pendingBills);
+        return;
+      }
+
+      listContainer.innerHTML = pendingBills.map(b => {
+        const flatObj = db.flats.find(f => f.id.toLowerCase() === b.flatId.toLowerCase());
+        const owner = flatObj ? flatObj.owner : "-";
+        const isChecked = selectedBulkBillIds.has(b.id);
+
+        return `
+          <label class="p-2.5 rounded-xl border border-slate-200 bg-slate-50 flex items-center justify-between cursor-pointer hover:bg-emerald-50/50 text-xs">
+            <div class="flex items-center gap-2.5">
+              <input type="checkbox" value="${b.id}" ${isChecked ? 'checked' : ''} onchange="toggleBulkBillSelection('${b.id}', this.checked)" class="w-4 h-4 text-emerald-600 rounded">
+              <div>
+                <span class="font-bold text-slate-800">${b.flatId} (${owner})</span>
+                <p class="text-[10px] text-slate-500">${b.month}</p>
+              </div>
+            </div>
+            <strong class="text-emerald-700 font-black">₹${Number(b.amount).toLocaleString('en-IN')}</strong>
+          </label>
+        `;
+      }).join('');
+
+      updateBulkSummary(pendingBills);
+    }
+
+    function toggleBulkBillSelection(billId, checked) {
+      if (checked) selectedBulkBillIds.add(billId);
+      else selectedBulkBillIds.delete(billId);
+
+      const selMonth = document.getElementById('bulkFilterMonth')?.value || "ALL";
+      let pendingBills = db.bills.filter(b => b.status === "Pending");
+      if (selMonth !== "ALL") pendingBills = pendingBills.filter(b => b.month === selMonth);
+
+      updateBulkSummary(pendingBills);
+    }
+
+    function toggleBulkSelectAll(checked) {
+      const selMonth = document.getElementById('bulkFilterMonth')?.value || "ALL";
+      let pendingBills = db.bills.filter(b => b.status === "Pending");
+      if (selMonth !== "ALL") pendingBills = pendingBills.filter(b => b.month === selMonth);
+
+      if (checked) pendingBills.forEach(b => selectedBulkBillIds.add(b.id));
+      else selectedBulkBillIds.clear();
+
+      renderBulkCollectList();
+    }
+
+    function updateBulkSummary(pendingBills) {
+      const selectedBills = db.bills.filter(b => selectedBulkBillIds.has(b.id));
+      const totalAmt = selectedBills.reduce((s, b) => s + Number(b.amount || 0), 0);
+
+      document.getElementById('bulkCollectTotalAmt').innerText = `₹${totalAmt.toLocaleString('en-IN')}`;
+      document.getElementById('bulkCollectSelectedCount').innerText = `${selectedBills.length} bills`;
+
+      const allCheckbox = document.getElementById('bulkSelectAllCheckbox');
+      if (allCheckbox) {
+        allCheckbox.checked = pendingBills.length > 0 && pendingBills.every(b => selectedBulkBillIds.has(b.id));
+      }
+    }
+
+    function commitBulkCollection() {
+      if (currentUser?.role !== 'admin') {
+        showToast("Only Admin can collect bills in bulk", "error");
+        return;
+      }
+
+      if (selectedBulkBillIds.size === 0) {
+        showToast("Please select at least one bill to collect.", "error");
+        return;
+      }
+
+      const paymentDate = document.getElementById('bulkCollectDate').value || new Date().toISOString().split('T')[0];
+      let collectedCount = 0;
+
+      db.bills.forEach(b => {
+        if (selectedBulkBillIds.has(b.id)) {
+          b.status = "Paid";
+          b.paidOn = paymentDate;
+          b.receiptNo = "REC-" + Math.floor(1000 + Math.random() * 9000);
+          collectedCount++;
+        }
+      });
+
+      saveLocalState();
+      refreshAllViews();
+      closeModal('modalBulkCollect');
+      triggerAutomaticSync();
+      showToast(`Collected ${collectedCount} bills successfully!`);
+    }
+
+    // Expenses View
+    function renderExpenses() {
+      const container = document.getElementById('expensesContainer');
+      const isAdmin = currentUser?.role === 'admin';
+
+      if (db.expenses.length === 0) {
+        container.innerHTML = `<div class="text-center py-8 text-xs text-slate-400">No expenses recorded</div>`;
+        return;
+      }
+
+      container.innerHTML = db.expenses.map(e => `
+        <div class="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-700 border border-amber-100 flex items-center justify-center text-sm">
+              <i class="fa-solid fa-receipt"></i>
+            </div>
+            <div>
+              <h4 class="text-xs font-bold text-slate-800">${e.title}</h4>
+              <p class="text-[10px] text-slate-400">${e.category} • ${e.date}</p>
+            </div>
+          </div>
+          <div class="text-right flex items-center gap-2">
+            <span class="text-xs font-extrabold text-rose-600">-₹${Number(e.amount).toLocaleString('en-IN')}</span>
+            ${isAdmin ? `
+              <button onclick="askDeleteExpense('${e.id}')" class="text-[10px] bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold px-1.5 py-0.5 rounded-md" title="Delete Expense">
+                <i class="fa-solid fa-trash text-[9px]"></i>
+              </button>
+            ` : ''}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function askDeleteExpense(expId) {
+      if (currentUser?.role !== 'admin') {
+        showToast("Only Admin can delete expenses", "error");
+        return;
+      }
+      openConfirmModal("Delete Expense", "Are you sure you want to permanently delete this expense?", () => {
+        db.expenses = db.expenses.filter(e => e.id !== expId);
+        saveLocalState();
+        refreshAllViews();
+        triggerAutomaticSync();
+        showToast("Expense deleted.");
+      });
+    }
+
+    // Flats View
+    function populateBillFlatSelect() {
+      const select = document.getElementById('billFlatSelect');
+      if (!select) return;
+      select.innerHTML = `<option value="ALL">★ All Flats (Generate for Everyone) / सर्व फ्लॅट्स</option>` + 
+        db.flats.map(f => `<option value="${f.id}">${f.id} - ${f.owner} (Rate: ₹${f.maintenance})</option>`).join('');
+    }
+
+    function renderFlats() {
+      const container = document.getElementById('flatsContainer');
+      const isAdmin = currentUser?.role === 'admin';
+      
+      populateBillFlatSelect();
+
+      if (db.flats.length === 0) {
+        container.innerHTML = `<div class="text-center py-8 text-xs text-slate-400">No flats registered yet</div>`;
+        return;
+      }
+
+      container.innerHTML = db.flats.map(f => {
+        const flatBills = db.bills.filter(b => isFlatMatch(b.flatId, f.id));
+        
+        // All-time pending and paid amounts for this flat
+        const totalPendingAmount = flatBills
+          .filter(b => b.status === "Pending")
+          .reduce((sum, b) => sum + Number(b.amount || 0), 0);
+
+        const totalPaidAmount = flatBills
+          .filter(b => b.status === "Paid")
+          .reduce((sum, b) => sum + Number(b.amount || 0), 0);
+
+        // Current billing cycle month bills for this flat
+        const currentMonthBills = flatBills
+          .filter(b => isBillOfCurrentMonth(b));
+
+        const currentMonthPendingBills = currentMonthBills
+          .filter(b => b.status === "Pending");
+
+        const currentMonthPendingAmount = currentMonthPendingBills
+          .reduce((sum, b) => sum + Number(b.amount || 0), 0);
+
+        const currentMonthPaidAmount = currentMonthBills
+          .filter(b => b.status === "Paid")
+          .reduce((sum, b) => sum + Number(b.amount || 0), 0);
+
+        return `
+        <div class="bg-white p-3.5 rounded-2xl border border-slate-100 shadow-sm flex flex-col gap-2">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-700 border border-indigo-100 flex items-center justify-center font-bold text-xs">
+                ${f.id}
+              </div>
+              <div>
+                <h4 class="text-xs font-bold text-slate-800">${f.owner}</h4>
+                <p class="text-[10px] text-slate-400">Contact: ${f.contact || '-'}</p>
+              </div>
+            </div>
+            <div class="text-right">
+              <span class="text-xs font-extrabold text-indigo-600">₹${Number(f.maintenance).toLocaleString('en-IN')}/mo</span>
+              <p class="text-[9px] text-slate-400">Monthly Rate</p>
+            </div>
+          </div>
+
+          <div class="pt-1.5 border-t border-slate-100 text-[10px]">
+            <div class="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 flex items-center justify-between">
+              <div>
+                <span class="block text-[9px] font-semibold text-slate-500">Total Status (सर्व स्थिती):</span>
+                <strong class="text-xs font-black text-emerald-700 block mt-0.5">
+                  ₹${totalPaidAmount.toLocaleString('en-IN')} Paid Till Date
+                </strong>
+              </div>
+              <div class="text-right">
+                ${totalPendingAmount > 0 
+                  ? `<span class="px-2 py-1 rounded-lg text-[10px] font-bold bg-rose-100 text-rose-700 border border-rose-200 inline-block">Pending Dues: ₹${totalPendingAmount.toLocaleString('en-IN')}</span>` 
+                  : '<span class="px-2 py-1 rounded-lg text-[10px] font-bold bg-emerald-100 text-emerald-700 border border-emerald-200 inline-block"><i class="fa-solid fa-check"></i> No Pending Dues</span>'}
+              </div>
+            </div>
+          </div>
+
+        ${isAdmin ? `
+            <div class="flex items-center justify-end gap-1.5 pt-1.5 border-t border-slate-100">
+              <button onclick="openEditFlatModal('${f.id}')" class="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold rounded-lg text-[10px] flex items-center gap-1">
+                <i class="fa-solid fa-pen text-[9px]"></i> Edit
+              </button>
+              <button onclick="askDeleteFlat('${f.id}')" class="px-2.5 py-1 bg-rose-50 text-rose-700 hover:bg-rose-100 font-bold rounded-lg text-[10px] flex items-center gap-1">
+                <i class="fa-solid fa-trash text-[9px]"></i> Delete
+              </button>
+            </div>
+          ` : ''}
+        </div>
+      `;
+      }).join('');
+    }
+
+    // Users View
+    function renderUsersList() {
+      const container = document.getElementById('usersListContainer');
+      if (!container) return;
+
+      container.innerHTML = db.users.map(u => {
+        const roleLabels = {
+          admin: { label: "Admin", class: "bg-rose-100 text-rose-800 border-rose-200" },
+          committee: { label: "Committee Member", class: "bg-amber-100 text-amber-800 border-amber-200" },
+          flat_owner: { label: "Flat Owner", class: "bg-emerald-100 text-emerald-800 border-emerald-200" }
+        };
+        const rInfo = roleLabels[u.role] || roleLabels.flat_owner;
+
+        return `
+          <div class="bg-white p-3.5 rounded-2xl border border-slate-100 shadow-sm flex flex-col gap-2.5">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2.5">
+                <div class="w-9 h-9 rounded-xl ${u.active ? 'bg-indigo-50 text-indigo-700' : 'bg-slate-100 text-slate-400'} flex items-center justify-center font-bold text-xs">
+                  ${u.flatId ? u.flatId : '<i class="fa-solid fa-user"></i>'}
+                </div>
+                <div>
+                  <h4 class="text-xs font-bold text-slate-900">${u.name}</h4>
+                  <p class="text-[10px] text-slate-400">User: <span class="font-mono font-semibold text-slate-600">${u.username}</span> ${u.flatId ? '• Flat ' + u.flatId : ''}</p>
+                </div>
+              </div>
+              <span class="text-[9px] px-2 py-0.5 rounded-full font-bold border ${rInfo.class}">
+                ${rInfo.label}
+              </span>
+            </div>
+
+            <div class="flex items-center justify-between pt-2 border-t border-slate-100 text-[11px]">
+              <div class="flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full ${u.active ? 'bg-emerald-500' : 'bg-rose-500'}"></span>
+                <span class="text-[10px] font-semibold ${u.active ? 'text-emerald-700' : 'text-rose-700'}">${u.active ? 'Active' : 'Disabled'}</span>
+              </div>
+              
+              <div class="flex items-center gap-1.5">
+                <button onclick="openEditUserModal('${u.username}')" class="px-2 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold rounded-lg text-[10px] flex items-center gap-1">
+                  <i class="fa-solid fa-pen text-[9px]"></i> Edit
+                </button>
+                <button onclick="openAdminResetPassModal('${u.username}')" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg text-[10px] flex items-center gap-1">
+                  <i class="fa-solid fa-key text-[9px]"></i> Password
+                </button>
+                ${u.username.toLowerCase() !== 'admin' ? `
+                  <button onclick="toggleUserActiveState('${u.username}')" class="px-2 py-1 ${u.active ? 'bg-rose-50 text-rose-700 hover:bg-rose-100' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'} font-bold rounded-lg text-[10px]">
+                    ${u.active ? 'Disable' : 'Enable'}
+                  </button>
+                  <button onclick="deleteUserRecord('${u.username}')" class="px-2 py-1 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-lg text-[10px] flex items-center gap-1" title="Delete User">
+                    <i class="fa-solid fa-trash text-[9px]"></i>
+                  </button>
+                ` : ''}
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Bill Creation Helpers
+    function openAddBillModal() {
+      if (currentUser?.role !== 'admin') {
+        showToast("Only Admin has permission to generate bills", "error");
+        return;
+      }
+      populateBillFlatSelect();
+      document.getElementById('billMonth').value = new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' });
+      autoFillBillAmount();
+      openModal('modalAddBill');
+    }
+
+    function autoFillBillAmount() {
+      const selFlatId = document.getElementById('billFlatSelect').value;
+      const amtContainer = document.getElementById('billAmountContainer');
+      const amtInput = document.getElementById('billAmount');
+
+      if (selFlatId === "ALL") {
+        amtContainer.style.display = 'none';
+      } else {
+        amtContainer.style.display = 'block';
+        const flat = db.flats.find(f => f.id === selFlatId);
+        if (flat) amtInput.value = flat.maintenance;
+      }
+    }
+
+    function saveNewBill() {
+      if (currentUser?.role !== 'admin') {
+        showToast("Only Admin can generate maintenance bills", "error");
+        return;
+      }
+
+      const flatId = document.getElementById('billFlatSelect').value;
+      const month = document.getElementById('billMonth').value.trim();
+      const status = document.getElementById('billStatus').value;
+
+      if (!month) {
+        showToast("Please enter a billing month", "error");
+        return;
+      }
+
+      if (flatId === "ALL") {
+        if (db.flats.length === 0) {
+          showToast("No flats available to generate bills for.", "error");
+          return;
+        }
+
+        let generatedCount = 0;
+        db.flats.forEach(f => {
+          const alreadyBilled = db.bills.some(b => b.flatId.toLowerCase() === f.id.toLowerCase() && b.month.toLowerCase() === month.toLowerCase());
+          if (!alreadyBilled) {
+            db.bills.push({
+              id: "BILL-" + Math.floor(10000 + Math.random() * 90000),
+              flatId: f.id,
+              month,
+              amount: Number(f.maintenance || 2000),
+              status,
+              paidOn: status === 'Paid' ? new Date().toISOString().split('T')[0] : '-',
+              receiptNo: status === 'Paid' ? 'REC-' + Math.floor(1000 + Math.random() * 9000) : '-'
+            });
+            generatedCount++;
+          }
+        });
+
+        saveLocalState();
+        refreshAllViews();
+        closeModal('modalAddBill');
+        triggerAutomaticSync();
+        showToast(`Generated ${generatedCount} bills for "${month}".`);
+        return;
+      }
+
+      const amount = Number(document.getElementById('billAmount').value);
+      if (!amount) {
+        showToast("Please enter a valid bill amount", "error");
+        return;
+      }
+
+      db.bills.push({
+        id: "BILL-" + Date.now().toString().slice(-5),
+        flatId,
+        month,
+        amount,
+        status,
+        paidOn: status === 'Paid' ? new Date().toISOString().split('T')[0] : '-',
+        receiptNo: status === 'Paid' ? 'REC-' + Math.floor(1000 + Math.random() * 9000) : '-'
+      });
+
+      saveLocalState();
+      refreshAllViews();
+      closeModal('modalAddBill');
+      triggerAutomaticSync();
+      showToast("Bill created successfully!");
+    }
+
+    // Expense Creation Helpers
+    function openAddExpenseModal() {
+      if (currentUser?.role !== 'admin') {
+        showToast("Only Admin has permission to add expenses", "error");
+        return;
+      }
+      document.getElementById('expDate').value = new Date().toISOString().split('T')[0];
+      openModal('modalAddExpense');
+    }
+
+    function saveNewExpense() {
+      if (currentUser?.role !== 'admin') {
+        showToast("Only Admin can record society expenses", "error");
+        return;
+      }
+
+      const title = document.getElementById('expTitle').value.trim();
+      const category = document.getElementById('expCategory').value;
+      const amount = Number(document.getElementById('expAmount').value);
+      const date = document.getElementById('expDate').value;
+
+      if (!title || !amount || !date) {
+        showToast("Please enter title, amount and date", "error");
+        return;
+      }
+
+      db.expenses.push({
+        id: "EXP-" + Date.now().toString().slice(-4),
+        title,
+        category,
+        amount,
+        date
+      });
+
+      saveLocalState();
+      refreshAllViews();
+      closeModal('modalAddExpense');
+      triggerAutomaticSync();
+      showToast("Expense recorded successfully!");
+    }
+
+    // Flat Creation & Modification Helpers
+    function openAddFlatModal() { 
+      if (currentUser?.role !== 'admin') {
+        alert("Only Admin has permission to add flats");
+        return;
+      }
+      document.getElementById('flatModalTitle').innerText = "Add Flat / Member";
+      document.getElementById('manageFlatMode').value = "create";
+      document.getElementById('manageFlatOriginalId').value = "";
+      document.getElementById('flatId').value = "";
+      document.getElementById('flatId').removeAttribute('readonly');
+      document.getElementById('flatOwner').value = "";
+      document.getElementById('flatContact').value = "";
+      document.getElementById('flatMaintenance').value = "2000";
+      openModal('modalAddFlat'); 
+    }
+
+    function openEditFlatModal(flatId) {
+      if (currentUser?.role !== 'admin') return;
+      const flat = db.flats.find(f => f.id.toLowerCase() === flatId.toLowerCase());
+      if (!flat) return;
+
+      document.getElementById('flatModalTitle').innerText = `Edit Flat (${flat.id})`;
+      document.getElementById('manageFlatMode').value = "edit";
+      document.getElementById('manageFlatOriginalId').value = flat.id;
+
+      document.getElementById('flatId').value = flat.id;
+      document.getElementById('flatOwner').value = flat.owner;
+      document.getElementById('flatContact').value = flat.contact || "";
+      document.getElementById('flatMaintenance').value = flat.maintenance;
+
+      openModal('modalAddFlat');
+    }
+
+    function saveNewFlat() {
+      if (currentUser?.role !== 'admin') {
+        alert("Only Admin can manage flats");
+        return;
+      }
+
+      const mode = document.getElementById('manageFlatMode').value;
+      const origId = document.getElementById('manageFlatOriginalId').value;
+      const id = document.getElementById('flatId').value.trim().toUpperCase();
+      const owner = document.getElementById('flatOwner').value.trim();
+      const contact = document.getElementById('flatContact').value.trim();
+      const maintenance = Number(document.getElementById('flatMaintenance').value) || 2000;
+
+      if (!id || !owner) {
+        alert("Please specify Flat Number and Owner Name");
+        return;
+      }
+
+      if (mode === "edit") {
+        const idx = db.flats.findIndex(f => f.id.toLowerCase() === origId.toLowerCase());
+        if (idx >= 0) db.flats[idx] = { id, owner, contact, maintenance };
+        if (origId !== id) {
+          db.bills.forEach(b => { if (b.flatId.toLowerCase() === origId.toLowerCase()) b.flatId = id; });
+          db.users.forEach(u => { if (u.flatId && u.flatId.toLowerCase() === origId.toLowerCase()) u.flatId = id; });
+        }
+      } else {
+        if (db.flats.some(f => f.id.toLowerCase() === id.toLowerCase())) {
+          alert("A flat with this number already exists!");
+          return;
+        }
+        db.flats.push({ id, owner, contact, maintenance });
+        if (!db.users.some(u => u.username.toLowerCase() === id.toLowerCase())) {
+          db.users.push({
+            username: id,
+            name: owner,
+            role: "flat_owner",
+            flatId: id,
+            password: "1234",
+            active: true
+          });
+        }
+      }
+
+      saveLocalState();
+      refreshAllViews();
+      closeModal('modalAddFlat');
+      triggerAutomaticSync();
+    }
+
+    function askDeleteFlat(flatId) {
+      if (currentUser?.role !== 'admin') {
+        showToast("Only Admin can delete flats", "error");
+        return;
+      }
+      openConfirmModal("Delete Flat", `Are you sure you want to delete flat ${flatId}?`, () => {
+        db.flats = db.flats.filter(f => f.id.toLowerCase() !== flatId.toLowerCase());
+        db.users.forEach(u => { if (u.flatId && u.flatId.toLowerCase() === flatId.toLowerCase()) u.flatId = ""; });
+        saveLocalState();
+        refreshAllViews();
+        triggerAutomaticSync();
+        showToast(`Flat ${flatId} deleted.`);
+      });
+    }
+
+    // User Management Helpers
+    function openCreateUserModal() {
+      document.getElementById('userManageModalTitle').innerText = "Create User";
+      document.getElementById('manageUserMode').value = "create";
+      document.getElementById('manageUserOriginalUsername').value = "";
+      const userField = document.getElementById('manageUserUsername');
+      userField.value = "";
+      userField.removeAttribute('readonly');
+      document.getElementById('manageUserName').value = "";
+      document.getElementById('manageUserRole').value = "flat_owner";
+      document.getElementById('manageUserPassword').value = "1234";
+      document.getElementById('manageUserActive').checked = true;
+
+      const flatSelect = document.getElementById('manageUserFlatId');
+      flatSelect.innerHTML = `<option value="">None / Society Level</option>` + db.flats.map(f => `<option value="${f.id}">${f.id} (${f.owner})</option>`).join('');
+
+      toggleManageFlatField();
+      openModal('modalUserManage');
+    }
+
+    function openEditUserModal(username) {
+      if (currentUser?.role !== 'admin') return;
+      const user = db.users.find(u => u.username.toLowerCase() === username.toLowerCase());
+      if (!user) return;
+
+      document.getElementById('userManageModalTitle').innerText = `Edit User (${user.username})`;
+      document.getElementById('manageUserMode').value = "edit";
+      document.getElementById('manageUserOriginalUsername').value = user.username;
+
+      const userField = document.getElementById('manageUserUsername');
+      userField.value = user.username;
+      if (user.username.toLowerCase() === 'admin') userField.setAttribute('readonly', true);
+      else userField.removeAttribute('readonly');
+
+      document.getElementById('manageUserName').value = user.name;
+      document.getElementById('manageUserRole').value = user.role;
+      document.getElementById('manageUserPassword').value = user.password;
+      document.getElementById('manageUserActive').checked = !!user.active;
+
+      const flatSelect = document.getElementById('manageUserFlatId');
+      flatSelect.innerHTML = `<option value="">None / Society Level</option>` + db.flats.map(f => `<option value="${f.id}">${f.id} (${f.owner})</option>`).join('');
+      flatSelect.value = user.flatId || "";
+
+      toggleManageFlatField();
+      openModal('modalUserManage');
+    }
+
+    function toggleManageFlatField() {
+      const role = document.getElementById('manageUserRole').value;
+      document.getElementById('manageUserFlatBox').style.display = role === 'admin' ? 'none' : 'block';
+    }
+
+    function saveUserRecord() {
+      if (currentUser?.role !== 'admin') {
+        alert("Only Admin can manage users");
+        return;
+      }
+
+      const mode = document.getElementById('manageUserMode').value;
+      const originalUsername = document.getElementById('manageUserOriginalUsername').value;
+      const username = document.getElementById('manageUserUsername').value.trim();
+      const name = document.getElementById('manageUserName').value.trim();
+      const role = document.getElementById('manageUserRole').value;
+      const flatId = document.getElementById('manageUserFlatId').value;
+      const password = document.getElementById('manageUserPassword').value.trim() || "1234";
+      const active = document.getElementById('manageUserActive').checked;
+
+      if (!username || !name) {
+        alert("Please specify Username and Full Name");
+        return;
+      }
+
+      if (mode === "edit") {
+        const idx = db.users.findIndex(u => u.username.toLowerCase() === originalUsername.toLowerCase());
+        if (idx >= 0) {
+          if (username.toLowerCase() !== originalUsername.toLowerCase() && db.users.some(u => u.username.toLowerCase() === username.toLowerCase())) {
+            alert("Another user with this username already exists!");
+            return;
+          }
+          db.users[idx] = { username, name, role, flatId: role === 'admin' ? '' : flatId, password, active };
+        }
+      } else {
+        if (db.users.some(u => u.username.toLowerCase() === username.toLowerCase())) {
+          alert("A user with this username already exists!");
+          return;
+        }
+        db.users.push({ username, name, role, flatId: role === 'admin' ? '' : flatId, password, active });
+      }
+
+      saveLocalState();
+      refreshAllViews();
+      closeModal('modalUserManage');
+      triggerAutomaticSync();
+      alert(`User ${username} saved successfully!`);
+    }
+
+    function toggleUserActiveState(username) {
+      if (currentUser?.role !== 'admin') return;
+      const user = db.users.find(u => u.username.toLowerCase() === username.toLowerCase());
+      if (user && user.username.toLowerCase() !== 'admin') {
+        user.active = !user.active;
+        saveLocalState();
+        refreshAllViews();
+        triggerAutomaticSync();
+      }
+    }
+
+    function deleteUserRecord(username) {
+      if (currentUser?.role !== 'admin') return;
+      if (username.toLowerCase() === 'admin') {
+        showToast("Cannot delete primary administrator account!", "error");
+        return;
+      }
+      openConfirmModal("Delete User", `Are you sure you want to permanently delete user "${username}"?`, () => {
+        db.users = db.users.filter(u => u.username.toLowerCase() !== username.toLowerCase());
+        saveLocalState();
+        refreshAllViews();
+        triggerAutomaticSync();
+        showToast(`User "${username}" has been deleted.`);
+      });
+    }
+
+    function openAdminResetPassModal(username) {
+      if (currentUser?.role !== 'admin') return;
+      targetResetUsername = username;
+      document.getElementById('adminResetTargetUser').innerText = username;
+      document.getElementById('adminResetNewPass').value = "";
+      openModal('modalAdminResetPass');
+    }
+
+    function commitAdminPasswordReset() {
+      if (currentUser?.role !== 'admin') return;
+      const newPass = document.getElementById('adminResetNewPass').value.trim();
+      if (!newPass) {
+        alert("Please enter a new password");
+        return;
+      }
+
+      const user = db.users.find(u => u.username.toLowerCase() === targetResetUsername.toLowerCase());
+      if (user) {
+        user.password = newPass;
+        saveLocalState();
+        closeModal('modalAdminResetPass');
+        triggerAutomaticSync();
+        alert(`Password for ${targetResetUsername} has been reset successfully!`);
+      }
+    }
+
+    // Self Password Change
+    function openChangeMyPasswordModal() {
+      document.getElementById('selfCurrentPass').value = "";
+      document.getElementById('selfNewPass').value = "";
+      document.getElementById('selfConfirmPass').value = "";
+      openModal('modalChangeMyPassword');
+    }
+
+    function submitChangeMyPassword() {
+      const cur = document.getElementById('selfCurrentPass').value.trim();
+      const n1 = document.getElementById('selfNewPass').value.trim();
+      const n2 = document.getElementById('selfConfirmPass').value.trim();
+
+      if (!cur || !n1 || !n2) {
+        alert("Please fill in all password fields");
+        return;
+      }
+
+      const user = db.users.find(u => u.username.toLowerCase() === currentUser.username.toLowerCase());
+      if (!user || user.password !== cur) {
+        alert("Incorrect current password!");
+        return;
+      }
+
+      if (n1 !== n2) {
+        alert("New passwords do not match!");
+        return;
+      }
+
+      user.password = n1;
+      currentUser.password = n1;
+      sessionStorage.setItem('dattakrupa_current_user_v5', JSON.stringify(currentUser));
+      saveLocalState();
+      closeModal('modalChangeMyPassword');
+      triggerAutomaticSync();
+      showToast("Password changed successfully!");
+    }
+
+    // Summary Reports
+    function openSummaryModal() {
+      populateSummaryFilterOptions();
+      renderSummaryModalContent();
+      openModal('summaryModal');
+    }
+
+    function populateSummaryFilterOptions() {
+      const monthSel = document.getElementById('summaryFilterMonth');
+      const flatSel = document.getElementById('summaryFilterFlat');
+
+      if (monthSel) {
+        const uniqueMonths = Array.from(new Set(db.bills.map(b => b.month).filter(Boolean)));
+        monthSel.innerHTML = `<option value="ALL">All Billing Months</option>` + uniqueMonths.map(m => `<option value="${m}">${m}</option>`).join('');
+      }
+
+      if (flatSel) {
+        // Summary is available for all flats for all users (Admin, Committee, and Flat Owners)
+        const flatsList = db.flats;
+        flatSel.innerHTML = `<option value="ALL">All Flats (सर्व फ्लॅट्स)</option>` + 
+          flatsList.map(f => `<option value="${f.id}">${f.id} (${f.owner})</option>`).join('');
+      }
+    }
+
+    function renderSummaryModalContent() {
+      const selMonth = document.getElementById('summaryFilterMonth')?.value || "ALL";
+      const selFlat = document.getElementById('summaryFilterFlat')?.value || "ALL";
+
+      // Include all society bills for summary statement (transparent for all users)
+      let activeBills = db.bills;
+
+      if (selMonth !== "ALL") activeBills = activeBills.filter(b => b.month === selMonth);
+      if (selFlat !== "ALL") activeBills = activeBills.filter(b => isFlatMatch(b.flatId, selFlat));
+
+      const totalColl = activeBills.filter(b => b.status === "Paid").reduce((sum, b) => sum + Number(b.amount || 0), 0);
+      const totalPend = activeBills.filter(b => b.status === "Pending").reduce((sum, b) => sum + Number(b.amount || 0), 0);
+      const totalExp = db.expenses.reduce((sum, e) => sum + Number(e.amount || 0), 0);
+
+      const printDateEl = document.getElementById('summaryPrintDate');
+      const printCollEl = document.getElementById('summaryPrintColl');
+      const printExpEl = document.getElementById('summaryPrintExp');
+      const printPendEl = document.getElementById('summaryPrintPend');
+      const printBalEl = document.getElementById('summaryPrintBal');
+      const flatsTableEl = document.getElementById('summaryFlatsTable');
+
+      if (printDateEl) printDateEl.innerText = `Generated on: ${new Date().toLocaleDateString('en-IN')} • Filter: Month: ${selMonth}, Flat: ${selFlat}`;
+      if (printCollEl) printCollEl.innerText = `₹${totalColl.toLocaleString('en-IN')}`;
+      if (printExpEl) printExpEl.innerText = `₹${totalExp.toLocaleString('en-IN')}`;
+      if (printPendEl) printPendEl.innerText = `₹${totalPend.toLocaleString('en-IN')}`;
+      if (printBalEl) printBalEl.innerText = `₹${(totalColl - totalExp).toLocaleString('en-IN')}`;
+
+      // Aggregate all unique flats from both db.flats and db.bills
+      const flatMap = new Map();
+      db.flats.forEach(f => {
+        const cleanKey = f.id.replace(/^[a-zA-Z]-/, '').trim().toUpperCase();
+        flatMap.set(cleanKey, { id: f.id, displayId: cleanKey, owner: f.owner, maintenance: f.maintenance });
+      });
+      db.bills.forEach(b => {
+        const cleanKey = b.flatId.replace(/^[a-zA-Z]-/, '').trim().toUpperCase();
+        if (!flatMap.has(cleanKey)) {
+          flatMap.set(cleanKey, { id: b.flatId, displayId: cleanKey, owner: `Member ${cleanKey}`, maintenance: b.amount });
+        }
+      });
+
+      let flats = Array.from(flatMap.values());
+      if (selFlat !== "ALL") {
+        flats = flats.filter(f => isFlatMatch(f.id, selFlat) || isFlatMatch(f.displayId, selFlat));
+      }
+
+      // Sort numerically / alphabetically by flat number (101, 102, 201, 202)
+      flats.sort((a, b) => a.displayId.localeCompare(b.displayId, undefined, { numeric: true }));
+
+      if (flatsTableEl) {
+        flatsTableEl.innerHTML = `
+          <table class="w-full text-left">
+            <thead class="bg-slate-100">
+              <tr>
+                <th class="p-1.5">Flat</th>
+                <th class="p-1.5">Member</th>
+                <th class="p-1.5">This Month Due</th>
+                <th class="p-1.5">Total Paid Till Date</th>
+                <th class="p-1.5">Total Pending</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${flats.map(f => {
+                const flatBills = db.bills.filter(b => isFlatMatch(b.flatId, f.id) || isFlatMatch(b.flatId, f.displayId));
+                
+                const fPaid = flatBills
+                  .filter(b => b.status === 'Paid')
+                  .reduce((s, b) => s + Number(b.amount || 0), 0);
+
+                const recordedPending = flatBills
+                  .filter(b => b.status === 'Pending')
+                  .reduce((s, b) => s + Number(b.amount || 0), 0);
+
+                const currentMonthBill = flatBills.find(b => isBillOfCurrentMonth(b));
+                let fMonthPending = 0;
+                if (currentMonthBill) {
+                  if (currentMonthBill.status === 'Pending') fMonthPending = Number(currentMonthBill.amount || 0);
+                } else {
+                  fMonthPending = Number(f.maintenance || 2000);
+                }
+
+                // Total pending must include recorded pending bills and unbilled current month due
+                const fPend = Math.max(recordedPending, recordedPending + (currentMonthBill ? 0 : fMonthPending));
+
+                return `
+                  <tr class="border-t">
+                    <td class="p-1.5 font-bold">${f.displayId || f.id}</td>
+                    <td class="p-1.5">${f.owner}</td>
+                    <td class="p-1.5 ${fMonthPending > 0 ? 'text-rose-600 font-bold' : 'text-emerald-700 font-bold'}">₹${fMonthPending}</td>
+                    <td class="p-1.5 text-emerald-700 font-bold">₹${fPaid}</td>
+                    <td class="p-1.5 ${fPend > 0 ? 'text-rose-700 font-bold' : 'text-slate-400 font-semibold'}">₹${fPend}</td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+        `;
+      }
+    }
+
+    function closeSummaryModal() { closeModal('summaryModal'); }
+
+    function downloadSummaryCSV() {
+      const selMonth = document.getElementById('summaryFilterMonth')?.value || "ALL";
+      const selFlat = document.getElementById('summaryFilterFlat')?.value || "ALL";
+
+      // Export all society bills across all flats
+      let activeBills = db.bills;
+
+      if (selMonth !== "ALL") activeBills = activeBills.filter(b => b.month === selMonth);
+      if (selFlat !== "ALL") activeBills = activeBills.filter(b => b.flatId.toLowerCase() === selFlat.toLowerCase());
+
+      const csvRows = [["Bill ID", "Flat Number", "Month", "Amount", "Status", "Paid Date", "Receipt No"]];
+      activeBills.forEach(b => {
+        csvRows.push([b.id, b.flatId, `"${b.month}"`, b.amount, b.status, b.paidOn, b.receiptNo]);
+      });
+
+      const csvContent = "data:text/csv;charset=utf-8," + csvRows.map(e => e.join(",")).join("\n");
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", `DattaKrupa_All_Flats_Statement_${Date.now()}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    // Bills Downloads
+    function openBillsDownloadModal() {
+      populateBillsDownloadMonthOptions();
+      openModal('modalBillsDownload');
+    }
+
+    function populateBillsDownloadMonthOptions() {
+      const monthSelect = document.getElementById('billsDownloadFilterMonth');
+      if (!monthSelect) return;
+      const months = Array.from(new Set(db.bills.map(b => b.month).filter(Boolean)));
+      monthSelect.innerHTML = `<option value="ALL">All Months</option>` + months.map(m => `<option value="${m}">${m}</option>`).join('');
+    }
+
+    function getFilteredBillsForDownload() {
+      let list = currentUser?.role === 'flat_owner' 
+        ? db.bills.filter(b => b.flatId.toLowerCase() === currentUser.flatId.toLowerCase()) 
+        : db.bills;
+
+      const statusFilter = document.getElementById('billsDownloadFilterStatus')?.value || "ALL";
+      const monthFilter = document.getElementById('billsDownloadFilterMonth')?.value || "ALL";
+
+      if (statusFilter !== "ALL") list = list.filter(b => b.status === statusFilter);
+      if (monthFilter !== "ALL") list = list.filter(b => b.month === monthFilter);
+      return list;
+    }
+
+    function exportBillsExcel() {
+      const activeBills = getFilteredBillsForDownload();
+      if (activeBills.length === 0) {
+        alert("No bills match the selected filter criteria to export.");
+        return;
+      }
+
+      const rows = activeBills.map((b, i) => {
+        const flatObj = db.flats.find(f => f.id.toLowerCase() === b.flatId.toLowerCase());
+        return {
+          "Sr No": i + 1,
+          "Bill ID": b.id,
+          "Flat": b.flatId,
+          "Owner Name": flatObj ? flatObj.owner : "-",
+          "Month": b.month,
+          "Amount (INR)": Number(b.amount || 0),
+          "Status": b.status,
+          "Paid On": b.paidOn || "-",
+          "Receipt No": b.receiptNo || "-"
+        };
+      });
+
+      const totalAmt = activeBills.reduce((s, b) => s + Number(b.amount || 0), 0);
+      rows.push({
+        "Sr No": "", "Bill ID": "TOTAL", "Flat": "-", "Owner Name": "-",
+        "Month": "-", "Amount (INR)": totalAmt, "Status": "-", "Paid On": "-", "Receipt No": "-"
+      });
+
+      const ws = XLSX.utils.json_to_sheet(rows);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Bills");
+      XLSX.writeFile(wb, `DattaKrupa_Bills_${new Date().toISOString().split('T')[0]}.xlsx`);
+      closeModal('modalBillsDownload');
+    }
+
+    function exportBillsCSVFile() {
+      const activeBills = getFilteredBillsForDownload();
+      if (activeBills.length === 0) {
+        alert("No bills match the selected filter criteria.");
+        return;
+      }
+
+      const csvRows = [["Bill ID", "Flat Number", "Month", "Amount", "Status", "Paid Date", "Receipt No"]];
+      activeBills.forEach(b => {
+        csvRows.push([b.id, b.flatId, `"${b.month}"`, b.amount, b.status, b.paidOn, b.receiptNo]);
+      });
+
+      const totalAmt = activeBills.reduce((s, b) => s + Number(b.amount || 0), 0);
+      csvRows.push(["TOTAL", "-", "-", totalAmt, "-", "-", "-"]);
+
+      const csvContent = "data:text/csv;charset=utf-8," + csvRows.map(e => e.join(",")).join("\n");
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", `DattaKrupa_Bills_Report_${Date.now()}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      closeModal('modalBillsDownload');
+    }
+
+    function openPrintableBillsStatement() {
+      closeModal('modalBillsDownload');
+      openSummaryModal();
+    }
+
+    function openReceiptModal(billId) {
+      const bill = db.bills.find(b => b.id === billId);
+      if (!bill) return;
+      const flat = db.flats.find(f => isFlatMatch(f.id, bill.flatId));
+
+      const rNo = document.getElementById('recModalReceiptNo');
+      const rPaid = document.getElementById('recModalPaidOn');
+      const rFlat = document.getElementById('recModalFlat');
+      const rOwner = document.getElementById('recModalOwner');
+      const rMonth = document.getElementById('recModalMonth');
+      const rAmt = document.getElementById('recModalAmount');
+
+      if (rNo) rNo.innerText = bill.receiptNo || 'REC-' + bill.id;
+      if (rPaid) rPaid.innerText = bill.paidOn || new Date().toISOString().split('T')[0];
+      if (rFlat) rFlat.innerText = bill.flatId;
+      if (rOwner) rOwner.innerText = flat ? flat.owner : '-';
+      if (rMonth) rMonth.innerText = bill.month;
+      if (rAmt) rAmt.innerText = '₹' + Number(bill.amount).toLocaleString('en-IN');
+
+      openModal('modalReceipt');
+    }
+
+    // Expense Downloads
+    function openExpenseDownloadModal() { 
+      const isAdmin = currentUser?.role === 'admin';
+      const adminOptions = document.getElementById('adminExpenseExportOptions');
+      if (adminOptions) {
+        adminOptions.style.display = isAdmin ? 'block' : 'none';
+      }
+      openModal('modalExpenseDownload'); 
+    }
+
+    function getFilteredExpenses() {
+      let exps = db.expenses;
+      const cat = document.getElementById('expFilterCategory')?.value || "ALL";
+      const period = document.getElementById('expFilterPeriod')?.value || "ALL";
+
+      if (cat !== "ALL") {
+        exps = exps.filter(e => (e.category || '').toLowerCase() === cat.toLowerCase());
+      }
+
+      if (period === "THIS_MONTH") {
+        const { currentYearMonthPrefix } = getCurrentMonthYearStrings();
+        exps = exps.filter(e => e.date && e.date.startsWith(currentYearMonthPrefix));
+      }
+      return exps;
+    }
+
+    function exportExpensesExcel() {
+      const exps = getFilteredExpenses();
+      if (exps.length === 0) {
+        alert("No expenses match the selected filter criteria.");
+        return;
+      }
+
+      const totalExp = exps.reduce((s, e) => s + Number(e.amount || 0), 0);
+      const rows = exps.map((e, index) => ({
+        "Sr No": index + 1,
+        "Expense ID": e.id,
+        "Description": e.title,
+        "Category": e.category,
+        "Date": e.date,
+        "Amount (INR)": Number(e.amount)
+      }));
+
+      rows.push({
+        "Sr No": "", "Expense ID": "TOTAL", "Description": "Total Expenditure",
+        "Category": "-", "Date": "-", "Amount (INR)": totalExp
+      });
+
+      const ws = XLSX.utils.json_to_sheet(rows);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Expenses");
+      XLSX.writeFile(wb, `DattaKrupa_Expenses_${new Date().toISOString().split('T')[0]}.xlsx`);
+      closeModal('modalExpenseDownload');
+    }
+
+    function exportExpensesCSV() {
+      const exps = getFilteredExpenses();
+      if (exps.length === 0) {
+        alert("No expenses match the selected filter criteria.");
+        return;
+      }
+
+      const csvRows = [["Expense ID", "Description", "Category", "Date", "Amount (INR)"]];
+      exps.forEach(e => {
+        csvRows.push([e.id, `"${e.title.replace(/"/g, '""')}"`, e.category, e.date, e.amount]);
+      });
+
+      const totalExp = exps.reduce((s, e) => s + Number(e.amount || 0), 0);
+      csvRows.push(["TOTAL", "Total Expenses", "-", "-", totalExp]);
+
+      const csvContent = "data:text/csv;charset=utf-8," + csvRows.map(r => r.join(",")).join("\n");
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", `DattaKrupa_Expenses_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      closeModal('modalExpenseDownload');
+    }
+
+    function openPrintableExpenses() {
+      const exps = getFilteredExpenses();
+      if (exps.length === 0) {
+        alert("No expenses match the selected filter criteria.");
+        return;
+      }
+
+      const totalExp = exps.reduce((s, e) => s + Number(e.amount || 0), 0);
+      document.getElementById('expPrintDate').innerText = `Generated on: ${new Date().toLocaleDateString('en-IN')}`;
+      document.getElementById('expPrintTotalAmt').innerText = `₹${totalExp.toLocaleString('en-IN')}`;
+
+      const container = document.getElementById('expPrintTable');
+      container.innerHTML = `
+        <table class="w-full text-left">
+          <thead class="bg-slate-100">
+            <tr>
+              <th class="p-1.5">Date</th>
+              <th class="p-1.5">Expense Details</th>
+              <th class="p-1.5">Category</th>
+              <th class="p-1.5 text-right">Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${exps.map(e => `
+              <tr class="border-t">
+                <td class="p-1.5 text-slate-500 whitespace-nowrap">${e.date}</td>
+                <td class="p-1.5 font-bold text-slate-800">${e.title}</td>
+                <td class="p-1.5 text-slate-600">${e.category}</td>
+                <td class="p-1.5 text-right font-black text-rose-600">₹${Number(e.amount).toLocaleString('en-IN')}</td>
+              </tr>
+            `).join('')}
+            <tr class="border-t-2 border-slate-300 bg-slate-50 font-bold">
+              <td colspan="3" class="p-1.5 text-slate-800">Total Expenditure:</td>
+              <td class="p-1.5 text-right font-black text-rose-700">₹${totalExp.toLocaleString('en-IN')}</td>
+            </tr>
+          </tbody>
+        </table>
+      `;
+
+      closeModal('modalExpenseDownload');
+      openModal('modalPrintableExpenses');
+    }
+
+    function exportCategoryBreakdownExcel() {
+      const exps = getFilteredExpenses();
+      if (exps.length === 0) {
+        alert("No expenses match the selected filter criteria.");
+        return;
+      }
+
+      const catMap = {};
+      exps.forEach(e => {
+        const cat = e.category || 'Other';
+        if (!catMap[cat]) catMap[cat] = { total: 0, count: 0 };
+        catMap[cat].total += Number(e.amount || 0);
+        catMap[cat].count += 1;
+      });
+
+      const grandTotal = exps.reduce((s, e) => s + Number(e.amount || 0), 0);
+      const rows = Object.keys(catMap).map(cat => ({
+        "Category": cat,
+        "Transaction Count": catMap[cat].count,
+        "Total Amount (INR)": catMap[cat].total,
+        "Percentage of Total (%)": ((catMap[cat].total / (grandTotal || 1)) * 100).toFixed(1) + "%"
+      }));
+
+      rows.push({
+        "Category": "GRAND TOTAL",
+        "Transaction Count": exps.length,
+        "Total Amount (INR)": grandTotal,
+        "Percentage of Total (%)": "100.0%"
+      });
+
+      const ws = XLSX.utils.json_to_sheet(rows);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Category Summary");
+      XLSX.writeFile(wb, `DattaKrupa_Expense_Categories_${new Date().toISOString().split('T')[0]}.xlsx`);
+      closeModal('modalExpenseDownload');
+    }
+
+    function exportExpensesJSON() {
+      const exps = getFilteredExpenses();
+      if (exps.length === 0) {
+        alert("No expenses match the selected filter criteria.");
+        return;
+      }
+
+      const exportPayload = {
+        society: "DattaKrupa Society (दत्तकृपा सोसायटी)",
+        exportedAt: new Date().toISOString(),
+        totalExpenses: exps.reduce((s, e) => s + Number(e.amount || 0), 0),
+        transactionCount: exps.length,
+        expenses: exps
+      };
+
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportPayload, null, 2));
+      const link = document.createElement("a");
+      link.setAttribute("href", dataStr);
+      link.setAttribute("download", `DattaKrupa_Expenses_${Date.now()}.json`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      closeModal('modalExpenseDownload');
+    }
+
+    // Excel Imports
+    function handleMasterFileSelect(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const workbook = XLSX.read(new Uint8Array(event.target.result), { type: 'array' });
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(sheet);
+
+        stagedMasterRows = rows.map(r => ({
+          id: String(r['Flat Number'] || r['Flat'] || r['FlatId'] || '').trim().toUpperCase(),
+          owner: String(r['Owner Name'] || r['Name'] || r['Member'] || '').trim(),
+          contact: String(r['Contact'] || r['Phone'] || r['Mobile'] || '').trim(),
+          maintenance: Number(r['Monthly Maintenance'] || r['Maintenance'] || r['Rate'] || 2000)
+        })).filter(r => r.id && r.owner);
+
+        document.getElementById('masterPreviewArea').classList.remove('hidden');
+        document.getElementById('masterPreviewCount').innerText = `${stagedMasterRows.length} valid flats parsed`;
+        document.getElementById('masterPreviewTable').innerHTML = `
+          <table class="w-full text-left">
+            <thead class="bg-slate-100"><tr><th class="p-1">Flat</th><th class="p-1">Owner</th><th class="p-1">Rate</th></tr></thead>
+            <tbody>${stagedMasterRows.map(r => `<tr class="border-t"><td class="p-1 font-bold">${r.id}</td><td class="p-1">${r.owner}</td><td class="p-1">₹${r.maintenance}</td></tr>`).join('')}</tbody>
+          </table>
+        `;
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    function commitMasterImport() {
+      if (stagedMasterRows.length === 0) return;
+      stagedMasterRows.forEach(incoming => {
+        const idx = db.flats.findIndex(f => f.id.toLowerCase() === incoming.id.toLowerCase());
+        if (idx >= 0) db.flats[idx] = incoming;
+        else db.flats.push(incoming);
+
+        if (!db.users.some(u => u.username.toLowerCase() === incoming.id.toLowerCase())) {
+          db.users.push({
+            username: incoming.id,
+            name: incoming.owner,
+            role: "flat_owner",
+            flatId: incoming.id,
+            password: "1234",
+            active: true
+          });
+        }
+      });
+      saveLocalState();
+      refreshAllViews();
+      document.getElementById('masterPreviewArea').classList.add('hidden');
+      document.getElementById('masterExcelInput').value = '';
+      showToast(`Imported ${stagedMasterRows.length} flats!`);
+      triggerAutomaticSync();
+    }
+
+    function handleBillsFileSelect(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const workbook = XLSX.read(new Uint8Array(event.target.result), { type: 'array' });
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(sheet);
+
+        stagedBillsRows = rows.map(r => {
+          const flatId = String(r['Flat Number'] || r['Flat'] || '').trim().toUpperCase();
+          const status = String(r['Status'] || 'Pending').toLowerCase().includes('paid') ? 'Paid' : 'Pending';
+          return {
+            id: "BILL-" + Math.floor(10000 + Math.random() * 90000),
+            flatId,
+            month: String(r['Billing Month'] || r['Month'] || 'Previous Dues').trim(),
+            amount: Number(r['Amount'] || 2000),
+            status,
+            paidOn: status === 'Paid' ? (r['Paid Date'] || new Date().toISOString().split('T')[0]) : '-',
+            receiptNo: status === 'Paid' ? (r['Receipt No'] || 'REC-' + Math.floor(1000 + Math.random() * 9000)) : '-'
+          };
+        }).filter(r => r.flatId && r.amount);
+
+        document.getElementById('billsPreviewArea').classList.remove('hidden');
+        document.getElementById('billsPreviewCount').innerText = `${stagedBillsRows.length} bills parsed`;
+        document.getElementById('billsPreviewTable').innerHTML = `
+          <table class="w-full text-left">
+            <thead class="bg-slate-100"><tr><th class="p-1">Flat</th><th class="p-1">Month</th><th class="p-1">Amount</th><th class="p-1">Status</th></tr></thead>
+            <tbody>${stagedBillsRows.map(r => `<tr class="border-t"><td class="p-1 font-bold">${r.flatId}</td><td class="p-1">${r.month}</td><td class="p-1">₹${r.amount}</td><td class="p-1">${r.status}</td></tr>`).join('')}</tbody>
+          </table>
+        `;
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    function commitBillsImport() {
+      if (stagedBillsRows.length === 0) return;
+      stagedBillsRows.forEach(incomingBill => {
+        db.bills.push(incomingBill);
+        if (!db.flats.some(f => f.id.toLowerCase() === incomingBill.flatId.toLowerCase())) {
+          db.flats.push({
+            id: incomingBill.flatId,
+            owner: `Member ${incomingBill.flatId}`,
+            contact: "-",
+            maintenance: incomingBill.amount
+          });
+        }
+      });
+      saveLocalState();
+      refreshAllViews();
+      document.getElementById('billsPreviewArea').classList.add('hidden');
+      document.getElementById('billsExcelInput').value = '';
+      showToast(`Imported ${stagedBillsRows.length} bills!`);
+      triggerAutomaticSync();
+    }
+
+    function downloadSampleMasterExcel() {
+      const data = [
+        { "Flat Number": "A-101", "Owner Name": "Ramesh Sharma", "Contact": "9876543210", "Monthly Maintenance": 2000 },
+        { "Flat Number": "B-201", "Owner Name": "Amit Deshmukh", "Contact": "9876543212", "Monthly Maintenance": 2200 }
+      ];
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Master");
+      XLSX.writeFile(wb, "DattaKrupa_Master_Template.xlsx");
+    }
+
+    function downloadSampleBillsExcel() {
+      const data = [
+        { "Flat Number": "A-101", "Billing Month": "October 2026", "Amount": 2000, "Status": "Paid", "Paid Date": "2026-10-05", "Receipt No": "REC-7701" },
+        { "Flat Number": "B-201", "Billing Month": "October 2026", "Amount": 2200, "Status": "Pending", "Paid Date": "", "Receipt No": "" }
+      ];
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Bills");
+      XLSX.writeFile(wb, "DattaKrupa_Bills_Template.xlsx");
+    }
+  </script>
+</body>
+</html>
